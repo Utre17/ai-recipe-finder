@@ -7,7 +7,7 @@ const BASE_URL = 'https://api.spoonacular.com/recipes';
 console.log('🔑 API Configuration:', {
   hasSpoonacularKey: !!API_KEY,
   keyLength: API_KEY?.length || 0,
-  keyPreview: API_KEY ? `${API_KEY.substring(0, 8)}...` : 'Not set'
+  keyPreview: API_KEY ? '***masked***' : 'Not set'
 });
 
 // Fallback to TheMealDB API if Spoonacular is not available

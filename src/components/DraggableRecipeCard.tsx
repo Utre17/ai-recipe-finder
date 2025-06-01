@@ -30,7 +30,16 @@ export const DraggableRecipeCard: React.FC<DraggableRecipeCardProps> = ({
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: 9999,
-  } : undefined;
+    userSelect: 'none' as const,
+    WebkitUserSelect: 'none' as const,
+    msUserSelect: 'none' as const,
+    MozUserSelect: 'none' as const,
+  } : {
+    userSelect: 'none' as const,
+    WebkitUserSelect: 'none' as const,
+    msUserSelect: 'none' as const,
+    MozUserSelect: 'none' as const,
+  };
 
   // Debug logging
   useEffect(() => {
@@ -40,34 +49,19 @@ export const DraggableRecipeCard: React.FC<DraggableRecipeCardProps> = ({
     }
   }, [isBeingDragged, recipe.title, recipe.id]);
 
-  const handleClick = () => {
-    console.log('👆 Recipe card clicked:', recipe.title, 'ID: recipe-' + recipe.id);
-  };
-
-  const handleMouseDown = () => {
-    console.log('🖱️ Mouse down on recipe card:', recipe.title);
-  };
-
-  const handleMouseUp = () => {
-    console.log('🖱️ Mouse up on recipe card:', recipe.title);
-  };
-
   return (
     <motion.div
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
-      onClick={handleClick}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ 
         opacity: isBeingDragged ? 0.8 : 1, 
         scale: isBeingDragged ? 1.05 : 1,
       }}
       whileHover={{ scale: 1.02 }}
-      className={`group relative bg-white rounded-2xl overflow-hidden shadow-md border-2 cursor-grab active:cursor-grabbing transition-all ${
+      className={`group relative bg-white rounded-2xl overflow-hidden shadow-md border-2 cursor-grab active:cursor-grabbing transition-all touch-manipulation select-none ${
         isDragging || isBeingDragged
           ? 'border-primary shadow-lg rotate-3 z-50' 
           : 'border-transparent hover:border-primary/20 hover:shadow-lg'

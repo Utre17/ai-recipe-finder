@@ -33,9 +33,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   const [currentList, setCurrentList] = useState<ShoppingList | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('aisle');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [aiOptimization, setAiOptimization] = useState<{ optimizedList: string; tips: string[] } | null>(null);
   const [showAiOptimization, setShowAiOptimization] = useState(false);
+  const [aiOptimization, setAiOptimization] = useState<{ optimizedList: string; tips: string[] } | null>(null);
 
   const { 
     generateShoppingListFromMealPlans, 
@@ -45,29 +44,17 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   
   const { optimizeShoppingList, isLoading: aiLoading } = useAI();
 
-  const generateList = async () => {
-    setIsGenerating(true);
-    console.log('🛒 Generating shopping list from meal plans:', mealPlans.length, 'meal plans');
-    try {
-      const listId = generateShoppingListFromMealPlans(listName, mealPlans);
-      console.log('📋 Shopping list created with ID:', listId);
-      if (listId) {
-        // Add a small delay to ensure the list is saved to localStorage
-        setTimeout(() => {
-          const createdList = getShoppingListById(listId);
-          console.log('🔍 Retrieved shopping list:', createdList);
-          if (createdList) {
-            setCurrentList(createdList);
-            console.log('✅ Shopping list set successfully:', createdList.items.length, 'items');
-          } else {
-            console.error('❌ Created shopping list not found:', listId);
-          }
-        }, 100);
+  const generateList = () => {
+    const listId = generateShoppingListFromMealPlans(listName, mealPlans);
+    
+    if (listId) {
+      // Get the created list to display it
+      const createdList = getShoppingListById(listId);
+      
+      if (createdList) {
+        setCurrentList(createdList);
       }
-    } catch (error) {
-      console.error('Error generating shopping list:', error);
     }
-    setIsGenerating(false);
   };
 
   const organizedItems = useMemo(() => {
@@ -235,10 +222,9 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                 
                 <button
                   onClick={generateList}
-                  disabled={isGenerating}
                   className="w-full py-3 bg-gradient-to-r from-primary to-purple-600 text-white rounded-xl hover:shadow-lg transition-all font-medium disabled:opacity-50"
                 >
-                  {isGenerating ? 'Generating...' : 'Generate Shopping List'}
+                  Generate Shopping List
                 </button>
               </div>
             ) : (

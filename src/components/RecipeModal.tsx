@@ -194,7 +194,12 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                   </div>
                   <div className="flex items-center gap-1">
                     <DollarSign className="w-5 h-5" />
-                    <span>{formatPrice(recipe.pricePerServing * currentServings / recipe.servings)}</span>
+                    <span>{formatPrice(recipe.pricePerServing)}/serving</span>
+                    {currentServings > 1 && (
+                      <span className="text-white/70 text-sm ml-1">
+                        (Total: {formatPrice(recipe.pricePerServing * currentServings)})
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -7,14 +7,16 @@ const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 console.log('🤖 AI Configuration:', {
   hasOpenRouterKey: !!OPENROUTER_API_KEY,
   keyLength: OPENROUTER_API_KEY?.length || 0,
-  keyPreview: OPENROUTER_API_KEY ? `${OPENROUTER_API_KEY.substring(0, 8)}...` : 'Not set'
+  keyPreview: OPENROUTER_API_KEY ? '***masked***' : 'Not set'
 });
 
-// Configure OpenAI client to use OpenRouter
+// ⚠️ SECURITY WARNING: API key is exposed in client bundle
+// For production use, move OpenRouter calls to serverless functions
+// This is acceptable for portfolio/demo purposes only
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: OPENROUTER_API_KEY,
-  dangerouslyAllowBrowser: true,
+  dangerouslyAllowBrowser: true, // ⚠️ Security risk - for demo only
   defaultHeaders: {
     'HTTP-Referer': 'https://ai-recipe-finder.vercel.app', // Your app's URL
     'X-Title': 'AI Recipe Finder & Meal Planner', // Your app's name
@@ -97,8 +99,19 @@ Start with [ and end with ]. Each recipe must have all fields.`;
 
     // Try to parse JSON, with fallback handling
     try {
-      const recipes = JSON.parse(content);
-      return Array.isArray(recipes) ? recipes : [recipes];
+      // Improved JSON extraction - look for array bounds
+      const startIdx = content.indexOf('[');
+      const endIdx = content.lastIndexOf(']');
+      
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        const jsonContent = content.substring(startIdx, endIdx + 1);
+        const recipes = JSON.parse(jsonContent);
+        return Array.isArray(recipes) ? recipes : [recipes];
+      } else {
+        // Fallback to direct parsing
+        const recipes = JSON.parse(content);
+        return Array.isArray(recipes) ? recipes : [recipes];
+      }
     } catch (jsonError) {
       console.warn('⚠️ AI recipe response was not valid JSON, using fallback...');
       // Return fallback recommendations
@@ -168,13 +181,25 @@ Make sure each meal is specific and realistic for a ${preferences.cookingSkillLe
 
     // Try to parse JSON, with fallback handling
     try {
-      const parsed = JSON.parse(content);
-      return parsed;
+      // Improved JSON extraction - look for object bounds
+      const startIdx = content.indexOf('{');
+      const endIdx = content.lastIndexOf('}');
+      
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        const jsonContent = content.substring(startIdx, endIdx + 1);
+        const parsed = JSON.parse(jsonContent);
+        return parsed;
+      } else {
+        // Fallback to direct parsing
+        const parsed = JSON.parse(content);
+        return parsed;
+      }
     } catch (jsonError) {
       console.warn('⚠️ AI response was not valid JSON, attempting to extract JSON...');
       
       // Try to extract JSON from the response if it's wrapped in text
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      // Fixed: Use non-greedy matching to avoid capturing multiple objects
+      const jsonMatch = content.match(/\{[\s\S]*?\}/);
       if (jsonMatch) {
         try {
           const extracted = JSON.parse(jsonMatch[0]);
@@ -309,7 +334,25 @@ Format as JSON:
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error('No response from AI');
 
-    return JSON.parse(content);
+    // Improved JSON parsing with error handling
+    try {
+      // Try to extract JSON from response
+      const startIdx = content.indexOf('{');
+      const endIdx = content.lastIndexOf('}');
+      
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        const jsonContent = content.substring(startIdx, endIdx + 1);
+        return JSON.parse(jsonContent);
+      } else {
+        return JSON.parse(content);
+      }
+    } catch (parseError) {
+      console.warn('⚠️ Could not parse AI modification response as JSON');
+      return {
+        modifiedRecipe: `Modified ${recipe.title}\n\n${content}`,
+        changes: 'AI provided modifications but in an unexpected format.'
+      };
+    }
   } catch (error) {
     console.error('Error modifying recipe with AI:', error);
     return {
@@ -355,7 +398,25 @@ Format as JSON:
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error('No response from AI');
 
-    return JSON.parse(content);
+    // Improved JSON parsing with error handling
+    try {
+      // Try to extract JSON from response
+      const startIdx = content.indexOf('{');
+      const endIdx = content.lastIndexOf('}');
+      
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        const jsonContent = content.substring(startIdx, endIdx + 1);
+        return JSON.parse(jsonContent);
+      } else {
+        return JSON.parse(content);
+      }
+    } catch (parseError) {
+      console.warn('⚠️ Could not parse AI shopping optimization response as JSON');
+      return {
+        optimizedList: `Shopping List:\n\n${ingredients.map(item => `• ${item}`).join('\n')}`,
+        tips: ['AI optimization is currently unavailable', 'Buy seasonal produce for better prices', 'Check for sales and coupons']
+      };
+    }
   } catch (error) {
     console.error('Error optimizing shopping list:', error);
     return {

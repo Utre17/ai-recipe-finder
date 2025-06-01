@@ -26,8 +26,6 @@ interface NutritionDashboardProps {
 
 // Helper function to calculate nutrition from meal plans
 const calculateNutritionFromMealPlans = (mealPlans: MealPlan[]) => {
-  console.log('🥗 Calculating nutrition for meal plans:', mealPlans.length);
-  
   if (mealPlans.length === 0) {
     return {
       totalCalories: 0,
@@ -125,13 +123,6 @@ const calculateNutritionFromMealPlans = (mealPlans: MealPlan[]) => {
       calories: Math.round(dayCalories),
       target: 2000
     };
-  });
-
-  console.log('📊 Nutrition calculated:', { 
-    totalCalories, 
-    dailyAverages, 
-    macroData, 
-    weeklyCalories 
   });
 
   return {

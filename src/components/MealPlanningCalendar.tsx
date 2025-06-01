@@ -208,47 +208,35 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const activeIdStr = active.id.toString();
+    const activeIdStr = String(active.id);
     setActiveId(activeIdStr);
     
-    console.log('🚀 DRAG START - ID:', activeIdStr);
-    console.log('🔍 Available recipes:', availableRecipes.map(r => ({ id: r.id, title: r.title })));
-    console.log('📊 Active data:', active.data.current);
-    
-    // Check if dragging a recipe from the sidebar (format: "recipe-123")
+    // Check if dragging a recipe card
     if (activeIdStr.startsWith('recipe-')) {
-      const recipeId = activeIdStr.replace('recipe-', '');
-      const recipe = availableRecipes.find(r => r.id.toString() === recipeId);
+      const recipeId = parseInt(activeIdStr.replace('recipe-', ''));
+      const recipe = availableRecipes.find(r => r.id === recipeId);
       if (recipe) {
-        console.log('✅ Found recipe for drag:', recipe.title);
         setDraggedRecipe(recipe);
-        return;
-      } else {
-        console.log('❌ Recipe not found for ID:', recipeId);
-        console.log('🔍 Available recipe IDs:', availableRecipes.map(r => r.id));
       }
     }
     
-    // Check if it's an existing meal plan being moved
-    const existingPlan = mealPlans.find(plan => plan.id === activeIdStr);
-    if (existingPlan) {
-      console.log('✅ Found existing meal plan for move:', existingPlan.recipe.title);
-      setDraggedRecipe(existingPlan.recipe);
-    } else {
-      console.log('❌ No recipe or meal plan found for ID:', activeIdStr);
+    // Check if dragging an existing meal plan
+    if (activeIdStr.startsWith('meal-')) {
+      const existingPlan = mealPlans.find(plan => `meal-${plan.id}` === activeIdStr);
+      if (existingPlan) {
+        setDraggedRecipe(existingPlan.recipe);
+      }
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    console.log('🏁 DRAG END - Active:', active?.id, 'Over:', over?.id);
-    console.log('📍 Over data:', over?.data?.current);
-    
+    // Clear drag state
+    setActiveId(null);
+    setDraggedRecipe(null);
+
     if (!over) {
-      console.log('❌ No drop target found');
-      setActiveId(null);
-      setDraggedRecipe(null);
       return;
     }
 
@@ -279,8 +267,6 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
     
     if (!targetDate || !MEAL_TYPES.includes(targetMealType as MealType)) {
       console.log('❌ Invalid drop target format or meal type');
-      setActiveId(null);
-      setDraggedRecipe(null);
       return;
     }
 
@@ -309,9 +295,6 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
     } else {
       console.log('❌ No dragged recipe found');
     }
-
-    setActiveId(null);
-    setDraggedRecipe(null);
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
