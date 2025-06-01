@@ -354,3 +354,33 @@ const handleConfirmServingSize = () => {
 - Language: TypeScript
 - Code style: Arrow functions, single quotes, modular components
 - Folder convention: /components, /hooks, /utils, /api
+
+```
+
+### Critical Runtime Crash Prevention: Division-by-Zero and Map Undefined Fixes
+
+**Issues Found**:
+- recipe.servings could be undefined/null/0 causing NaN in calculations
+- analyzedInstructions[0]?.steps.map() could crash if steps is undefined
+
+**Solutions Applied**:
+```typescript
+// WRONG: Division by zero risk
+const [currentServings, setCurrentServings] = useState(recipe.servings);
+const scaleFactor = currentServings / recipe.servings;
+
+// CORRECT: Safe defaults and checks
+const defaultServings = Math.max(1, recipe.servings ?? 1);
+const [currentServings, setCurrentServings] = useState(defaultServings);
+const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : defaultServings;
+const scaleFactor = currentServings / baseServings;
+
+// WRONG: Map crash when steps is undefined
+{recipe.analyzedInstructions[0]?.steps.map((step, index) => ...)}
+
+// CORRECT: Check length before mapping
+{recipe.analyzedInstructions[0]?.steps?.length ? (
+  recipe.analyzedInstructions[0].steps.map((step, index) => ...)
+) : (
+  <div dangerouslySetInnerHTML={{ __html: recipe.instructions }} />
+)}

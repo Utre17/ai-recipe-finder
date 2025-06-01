@@ -17,7 +17,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
   const [selectedModifications, setSelectedModifications] = useState<string[]>([]);
   
   // Serving size editing state
-  const [currentServings, setCurrentServings] = useState(recipe.servings);
+  const defaultServings = Math.max(1, recipe.servings ?? 1);
+  const [currentServings, setCurrentServings] = useState(defaultServings);
   const [isEditingServings, setIsEditingServings] = useState(false);
   
   const { modifyRecipe, isLoading: aiLoading } = useAI();
@@ -240,8 +241,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                   </h3>
                   <div className="space-y-3">
                     {recipe.extendedIngredients.map((ingredient, index) => {
-                      // Parse and scale ingredient amounts
-                      const scaleFactor = currentServings / recipe.servings;
+                      // Parse and scale ingredient amounts - safe division
+                      const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : defaultServings;
+                      const scaleFactor = currentServings / baseServings;
                       let scaledText = ingredient.original;
                       
                       // Try to extract and scale numeric amounts
@@ -277,14 +279,16 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                 <div>
                   <h3 className="text-xl font-bold mb-4">Instructions</h3>
                   <div className="space-y-4">
-                    {recipe.analyzedInstructions[0]?.steps.map((step, index) => (
-                      <div key={index} className="flex gap-4">
-                        <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-                          {step.number}
+                    {recipe.analyzedInstructions[0]?.steps?.length ? (
+                      recipe.analyzedInstructions[0].steps.map((step, index) => (
+                        <div key={index} className="flex gap-4">
+                          <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                            {step.number}
+                          </div>
+                          <p className="text-gray-700 pt-1">{step.step}</p>
                         </div>
-                        <p className="text-gray-700 pt-1">{step.step}</p>
-                      </div>
-                    )) || (
+                      ))
+                    ) : (
                       <div 
                         className="text-gray-700 leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: recipe.instructions }}
@@ -307,7 +311,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {recipe.nutrition.nutrients.slice(0, 8).map((nutrient, index) => {
-                      const scaleFactor = currentServings / recipe.servings;
+                      const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : defaultServings;
+                      const scaleFactor = currentServings / baseServings;
                       const scaledAmount = Math.round(nutrient.amount * scaleFactor);
                       
                       return (
