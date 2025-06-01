@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Users, Heart, Star, DollarSign, ChefHat, Sparkles, Loader2, Plus, Minus, Edit } from 'lucide-react';
 import { Recipe } from '@/types/recipe';
 import { isFavorite, addToFavorites, removeFromFavorites } from '@/utils/storage';
+import { sanitizeRecipeContent } from '@/utils/sanitize';
 import { useAI } from '@/hooks/useAI';
 
 interface RecipeModalProps {
@@ -227,7 +228,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                 <h2 className="text-2xl font-bold mb-4 gradient-text">About This Recipe</h2>
                 <div 
                   className="text-gray-600 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: recipe.summary }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeRecipeContent(recipe.summary) }}
                 />
               </div>
 
@@ -291,7 +292,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                     ) : (
                       <div 
                         className="text-gray-700 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: recipe.instructions }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeRecipeContent(recipe.instructions) }}
                       />
                     )}
                   </div>

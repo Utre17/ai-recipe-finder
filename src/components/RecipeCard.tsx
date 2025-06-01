@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Clock, Users, Heart, Star, DollarSign } from 'lucide-react';
 import { Recipe } from '@/types/recipe';
 import { isFavorite, addToFavorites, removeFromFavorites } from '@/utils/storage';
+import { stripHtml } from '@/utils/sanitize';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -112,12 +113,9 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onSelect }) => {
           </div>
         )}
 
-        <p 
-          className="text-gray-600 text-sm line-clamp-3"
-          dangerouslySetInnerHTML={{ 
-            __html: recipe.summary.replace(/<[^>]*>/g, '') 
-          }}
-        />
+        <p className="text-gray-600 text-sm line-clamp-3">
+          {stripHtml(recipe.summary)}
+        </p>
       </div>
     </motion.div>
   );
