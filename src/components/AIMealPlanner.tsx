@@ -172,10 +172,130 @@ export const AIMealPlanner: React.FC = () => {
                     <Calendar className="w-5 h-5 text-green-500" />
                     Your Meal Plan
                   </h3>
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <pre className="whitespace-pre-wrap text-gray-700 font-medium leading-relaxed">
-                      {mealPlan.mealPlan}
-                    </pre>
+                  <div className="space-y-4">
+                    {(() => {
+                      // Debug the actual content
+                      console.log('🔍 Meal plan content to parse:', mealPlan.mealPlan);
+                      
+                      // Clean up the meal plan text - remove any JSON artifacts
+                      let cleanedMealPlan = mealPlan.mealPlan;
+                      
+                      // Remove JSON formatting if present
+                      cleanedMealPlan = cleanedMealPlan.replace(/^[{}\s]*"?mealplan"?\s*:?\s*"?/i, '');
+                      cleanedMealPlan = cleanedMealPlan.replace(/["{}]*$/, '');
+                      cleanedMealPlan = cleanedMealPlan.replace(/\\n/g, '\n');
+                      cleanedMealPlan = cleanedMealPlan.replace(/\\"/g, '"');
+                      
+                      console.log('🧹 Cleaned meal plan:', cleanedMealPlan);
+                      
+                      // Split by double newlines or day patterns
+                      const dayPatterns = cleanedMealPlan.split(/\n\s*\n|\n(?=Day\s+\d+)/i).filter(day => day.trim());
+                      
+                      // If no proper days found, create a fallback display
+                      if (dayPatterns.length === 0 || dayPatterns.every(day => day.length < 10)) {
+                        return (
+                          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-5">
+                            <h4 className="text-lg font-bold text-gray-800 mb-3">Your Meal Plan</h4>
+                            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                              {cleanedMealPlan || 'AI is generating your meal plan...'}
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return dayPatterns.map((dayPlan, index) => {
+                        const lines = dayPlan.split('\n').filter(line => line.trim());
+                        
+                        // Find day title (Day 1, Day 2, etc.)
+                        let dayTitle = `Day ${index + 1}`;
+                        let mealLines = lines;
+                        
+                        const dayTitleLine = lines.find(line => /day\s+\d+/i.test(line));
+                        if (dayTitleLine) {
+                          dayTitle = dayTitleLine.trim();
+                          mealLines = lines.filter(line => line !== dayTitleLine);
+                        }
+                        
+                        // Parse meals from remaining lines
+                        const meals = mealLines.filter(line => 
+                          line.includes(':') && 
+                          (line.toLowerCase().includes('breakfast') || 
+                           line.toLowerCase().includes('lunch') || 
+                           line.toLowerCase().includes('dinner') ||
+                           line.toLowerCase().includes('snack'))
+                        );
+                        
+                        // If no proper meals found, show all content
+                        if (meals.length === 0) {
+                          return (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-5"
+                            >
+                              <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                  {index + 1}
+                                </div>
+                                {dayTitle}
+                              </h4>
+                              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                <div className="whitespace-pre-wrap text-gray-700 text-sm">
+                                  {mealLines.join('\n')}
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        }
+                        
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-5"
+                          >
+                            <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </div>
+                              {dayTitle}
+                            </h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {meals.map((meal, mealIndex) => {
+                                const [mealType, mealName] = meal.split(':').map(part => part.trim());
+                                const mealIcons = {
+                                  'Breakfast': '🌅',
+                                  'Lunch': '☀️',
+                                  'Dinner': '🌙',
+                                  'Snack': '🍎'
+                                };
+                                
+                                return (
+                                  <div key={mealIndex} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-lg">
+                                        {mealIcons[mealType as keyof typeof mealIcons] || '🍽️'}
+                                      </span>
+                                      <span className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
+                                        {mealType}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-800 font-medium">
+                                      {mealName || meal}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 

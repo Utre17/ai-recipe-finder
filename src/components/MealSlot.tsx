@@ -1,8 +1,8 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Clock, Users } from 'lucide-react';
-import { MealPlan, MealType } from '@/types/recipe';
+import { Plus, X, Clock, Users, Edit } from 'lucide-react';
+import { MealPlan, MealType, Recipe } from '@/types/recipe';
 
 interface MealSlotProps {
   id: string;
@@ -10,6 +10,8 @@ interface MealSlotProps {
   date: Date;
   mealType: MealType;
   onRemoveMeal: (mealId: string) => void;
+  onRecipeSelect?: (recipe: Recipe) => void;
+  onEditServingSize?: (mealPlan: MealPlan) => void;
 }
 
 export const MealSlot: React.FC<MealSlotProps> = ({
@@ -18,6 +20,8 @@ export const MealSlot: React.FC<MealSlotProps> = ({
   date: _date,
   mealType: _mealType,
   onRemoveMeal,
+  onRecipeSelect,
+  onEditServingSize,
 }) => {
   const { isOver, setNodeRef, active } = useDroppable({
     id,
@@ -30,10 +34,11 @@ export const MealSlot: React.FC<MealSlotProps> = ({
 
   // Debug logging
   React.useEffect(() => {
+    console.log('🎯 MealSlot mounted:', id, 'for', _mealType);
     if (isOver && active) {
-      console.log('🐛 Recipe is over meal slot:', id, 'Active:', active.id);
+      console.log('🟢 Recipe is hovering over meal slot:', id, 'Active ID:', active.id);
     }
-  }, [isOver, active, id]);
+  }, [isOver, active, id, _mealType]);
 
   return (
     <div
@@ -77,16 +82,38 @@ export const MealSlot: React.FC<MealSlotProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ delay: index * 0.1 }}
-                className="group relative bg-white border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
+                className="group relative bg-white border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer"
+                onClick={() => onRecipeSelect?.(mealPlan.recipe)}
               >
-                {/* Remove Button */}
-                <button
-                  onClick={() => onRemoveMeal(mealPlan.id)}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
-                  title="Remove from meal plan"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+                {/* Editable indicator */}
+                <div className="absolute top-2 left-2 w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title="Editable"></div>
+
+                {/* Action Buttons */}
+                <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* Edit Serving Size Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditServingSize?.(mealPlan);
+                    }}
+                    className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 z-10 shadow-md hover:shadow-lg transition-all"
+                    title="Edit serving size"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  
+                  {/* Remove Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveMeal(mealPlan.id);
+                    }}
+                    className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-10 shadow-md hover:shadow-lg transition-all"
+                    title="Remove from meal plan"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
                 {/* Recipe Image */}
                 <div className="flex items-start gap-3">
@@ -106,9 +133,12 @@ export const MealSlot: React.FC<MealSlotProps> = ({
                         <Clock className="w-3 h-3" />
                         <span>{mealPlan.recipe.readyInMinutes}m</span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 text-blue-600 font-medium">
                         <Users className="w-3 h-3" />
-                        <span>{mealPlan.servings}</span>
+                        <span>{mealPlan.servings} serving{mealPlan.servings !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 text-blue-500 text-xs">
+                        (click to edit)
                       </div>
                     </div>
 

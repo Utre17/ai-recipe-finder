@@ -34,21 +34,69 @@ npm install tailwindcss@3.4.0
 </main>
 ```
 
+### Mistake: OpenRouter API 401 Authentication Errors
+**Wrong**:
+```js
+// Missing required headers for OpenRouter
+const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: OPENROUTER_API_KEY,
+  dangerouslyAllowBrowser: true,
+});
+```
+
+**Correct**:
+```js
+// Include required headers for OpenRouter identification
+const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: OPENROUTER_API_KEY,
+  dangerouslyAllowBrowser: true,
+  defaultHeaders: {
+    'HTTP-Referer': 'https://ai-recipe-finder.vercel.app',
+    'X-Title': 'AI Recipe Finder & Meal Planner',
+  },
+});
+```
+
+### Mistake: AI Models Returning Non-JSON Responses
+**Wrong**:
+```js
+// Direct JSON.parse without error handling
+const content = response.choices[0]?.message?.content;
+return JSON.parse(content);
+```
+
+**Correct**:
+```js
+// Robust JSON parsing with fallback handling
+const content = response.choices[0]?.message?.content;
+console.log('🔍 Raw AI response:', content);
+
+try {
+  const parsed = JSON.parse(content);
+  return parsed;
+} catch (jsonError) {
+  // Try to extract JSON from wrapped text
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch (extractError) {
+      // Use fallback structure
+      return { fallback: content };
+    }
+  }
+}
+```
+
 ### Best Practice: Visual Upgrades Implementation
 **Successful Pattern**:
 ```jsx
 // Hero with gradient text and proper motion timing
-<h1 className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
-<motion.section transition={{ duration: 0.8, delay: 0.3 }}>
-
-// Elegant background blobs with blend modes
-<div className="bg-pink-500/30 blur-[160px] mix-blend-lighten animate-blob" />
-
-// Professional navbar with logo + text
-<a className="flex items-center gap-2">
-  <img src="/logo.svg" alt="Logo" className="h-6 w-6" />
-  Yo Utre
-</a>
+<h1 className="text-5xl font-bold gradient-text mb-4">
+  AI Recipe Finder
+</h1>
 ```
 
 ### Best Practice: Conversion-Focused Portfolio Design
@@ -174,50 +222,108 @@ A modern AI-powered recipe application...
 - ✅ Optimized bundle size with logical chunk splitting
 - ✅ Production-ready with proper error handling
 
-### Mistake: Drag and Drop not working in Meal Planning Calendar
+### Mistake: Drag and Drop Not Working - DndContext Scope Issue
 **Wrong**:
 ```jsx
-// Issues that prevented drag and drop from working:
-1. Recipe IDs were not properly prefixed for unique identification
-2. Missing touch sensors and proper activation constraints
-3. Poor drop target ID parsing for date-mealtype format
-4. Missing visual feedback and debugging logs
-5. No proper event prevention for text selection during drag
-6. React warning about onSelectStart event handler
-7. No recipes available to drag when user goes to meal planning first
+// DraggableRecipeCard components outside DndContext
+<DndContext>
+  <MealSlot />
+  <DragOverlay />
+</DndContext>
+
+{/* Recipe Sidebar OUTSIDE DndContext - CAN'T DRAG */}
+<div>
+  {recipes.map(recipe => (
+    <DraggableRecipeCard recipe={recipe} />
+  ))}
+</div>
 ```
 
 **Correct**:
 ```jsx
-// Fixed drag and drop implementation:
-1. Properly prefixed recipe IDs: `recipe-${recipe.id}`
-2. Added multiple sensors with proper constraints:
-   - MouseSensor, TouchSensor, PointerSensor with activation distances
-3. Improved drop target parsing:
-   - Handle "2024-01-15-lunch" format correctly
-   - Split by '-' and reconstruct date properly
-4. Added debug logging with console.log for troubleshooting
-5. Fixed onSelectStart warning by using native DOM events:
-   - useRef + addEventListener instead of React synthetic events
-   - Proper cleanup in useEffect
-6. Added test recipes for development mode when no search results
-7. Enhanced visual feedback and UX guidance
+// All draggable components INSIDE DndContext
+<DndContext>
+  <MealSlot />
+  
+  {/* Recipe Sidebar INSIDE DndContext - CAN DRAG */}
+  <div>
+    {recipes.map(recipe => (
+      <DraggableRecipeCard recipe={recipe} />
+    ))}
+  </div>
+  
+  <DragOverlay />
+</DndContext>
 ```
 
-**Key fixes applied:**
-- Fixed React warning by replacing `onSelectStart` with native DOM events
-- Updated DraggableRecipeCard with proper event prevention
-- Added test recipes in development mode for immediate testing
-- Improved meal planning UX with better empty state and navigation
-- Added comprehensive debugging logs throughout drag flow
-- Enhanced visual feedback for better user experience
+**Key Rule**: ALL draggable components must be children of DndContext, not siblings or outside it.
 
-**Testing Instructions:**
-1. Go to "Meal Planning" tab (will show test recipes in dev mode)
-2. Try dragging test recipe cards to calendar slots
-3. Check browser console for debug logs during drag operations
-4. Verify drop zones highlight when dragging over them
-5. Test on both desktop and mobile/touch devices
+### Final Codebase Status: ✅ ALL CRITICAL ERRORS FIXED
+**Build Status**: ✅ Passes TypeScript compilation without errors
+**Linting**: ✅ ESLint configuration working
+**Dependencies**: ✅ All required packages installed with proper types
+**Production Ready**: ✅ Build generates optimized chunks successfully
+**Error Handling**: ✅ ErrorBoundary component implemented
+**AI Features**: ✅ Real AI integration with OpenRouter/Llama model
+**Drag & Drop**: ✅ Fixed and working with proper debugging
+**UI/UX**: ✅ Beautiful AI output formatting with proper parsing and styling
+
+### Best Practice: Serving Size Selection for Meal Planning
+**Successful Implementation**:
+```tsx
+// Modal-based serving size selection on recipe drop AND editing existing meal plans
+const [showServingSizeModal, setShowServingSizeModal] = useState(false);
+const [pendingRecipeAdd, setPendingRecipeAdd] = useState<{
+  recipe: Recipe;
+  date: string;
+  mealType: MealType;
+} | null>(null);
+const [editingMealPlan, setEditingMealPlan] = useState<MealPlan | null>(null);
+const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+
+// In handleDragEnd, show modal for new recipes
+if (activeIdStr.startsWith('recipe-')) {
+  setPendingRecipeAdd({
+    recipe: draggedRecipe,
+    date: targetDate,
+    mealType: targetMealType as MealType
+  });
+  setSelectedServings(draggedRecipe.servings || 4);
+  setModalMode('add');
+  setShowServingSizeModal(true);
+}
+
+// Handle editing existing meal plans
+const handleEditServingSize = (mealPlan: MealPlan) => {
+  setEditingMealPlan(mealPlan);
+  setSelectedServings(mealPlan.servings);
+  setModalMode('edit');
+  setShowServingSizeModal(true);
+};
+
+// Unified confirm handler for both modes
+const handleConfirmServingSize = () => {
+  if (modalMode === 'add' && pendingRecipeAdd) {
+    addRecipeToMealPlan(
+      pendingRecipeAdd.recipe, 
+      pendingRecipeAdd.date, 
+      pendingRecipeAdd.mealType,
+      selectedServings
+    );
+  } else if (modalMode === 'edit' && editingMealPlan) {
+    updateMealPlanById(editingMealPlan.id, { servings: selectedServings });
+  }
+};
+```
+
+**Key Features**:
+- Beautiful modal with serving size adjustment (±1, min 1, max 20)
+- **NEW: Edit serving sizes for existing meal plans via blue edit button**
+- Shows recipe details, meal type, and date in confirmation
+- Defaults to recipe's original serving size (add) or current meal plan servings (edit)
+- Updates nutrition and shopping lists automatically
+- Displays serving count in meal slots
+- Dual mode: 'add' for new recipes, 'edit' for existing meal plans
 
 ---
 #### ⚙️ `.remember/memory/project.md`

@@ -15,6 +15,7 @@ import { AIMealPlanner } from '@/components/AIMealPlanner';
 import { SearchFilters, Recipe, MealPlan, MealType } from '@/types/recipe';
 import { useMealPlan } from '@/hooks/useMealPlan';
 import { AIRecipeRecommendation } from '@/utils/ai';
+import { searchRecipes } from '@/utils/api';
 
 type ViewMode = 'search' | 'planning' | 'ai-recommendations' | 'ai-meal-planner';
 
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Recipe[]>([]);
   const [showShoppingModal, setShowShoppingModal] = useState(false);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const { mealPlans } = useMealPlan();
 
@@ -56,6 +58,31 @@ const App: React.FC = () => {
 
   const handleRecipeResults = (recipes: Recipe[]) => {
     setSearchResults(recipes);
+  };
+
+  const handleMealPlannerSearch = async (query: string) => {
+    try {
+      setIsSearching(true);
+      const searchFilters = { query };
+      const apiResponse = await searchRecipes(searchFilters);
+      
+      // Merge new recipes with existing ones, avoiding duplicates
+      const newRecipes = apiResponse.results;
+      const combinedRecipes = [...searchResults];
+      
+      newRecipes.forEach((newRecipe: Recipe) => {
+        if (!combinedRecipes.find(existing => existing.id === newRecipe.id)) {
+          combinedRecipes.push(newRecipe);
+        }
+      });
+      
+      setSearchResults(combinedRecipes);
+      console.log(`🔍 Added ${newRecipes.length} new recipes from search: "${query}"`);
+    } catch (error) {
+      console.error('Error searching for recipes:', error);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleAIRecipeSelect = (recommendation: AIRecipeRecommendation) => {
@@ -237,6 +264,9 @@ const App: React.FC = () => {
                   onGenerateShoppingList={handleGenerateShoppingList}
                   onViewNutrition={handleViewNutrition}
                   onNavigateToSearch={() => setViewMode('search')}
+                  onSearchRecipes={handleMealPlannerSearch}
+                  onRecipeSelect={handleRecipeSelect}
+                  isSearching={isSearching}
                 />
               </motion.div>
             )}

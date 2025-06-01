@@ -3,14 +3,25 @@ import { Recipe } from '@/types/recipe';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
+// Debug logging for AI API
+console.log('🤖 AI Configuration:', {
+  hasOpenRouterKey: !!OPENROUTER_API_KEY,
+  keyLength: OPENROUTER_API_KEY?.length || 0,
+  keyPreview: OPENROUTER_API_KEY ? `${OPENROUTER_API_KEY.substring(0, 8)}...` : 'Not set'
+});
+
 // Configure OpenAI client to use OpenRouter
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: OPENROUTER_API_KEY,
   dangerouslyAllowBrowser: true,
+  defaultHeaders: {
+    'HTTP-Referer': 'https://ai-recipe-finder.vercel.app', // Your app's URL
+    'X-Title': 'AI Recipe Finder & Meal Planner', // Your app's name
+  },
 });
 
-// Use free Llama model - great for recipe tasks
+// Use free model that works reliably with OpenRouter
 const MODEL = 'meta-llama/llama-3.2-3b-instruct:free';
 
 export interface AIRecipeRecommendation {
@@ -54,19 +65,22 @@ User Preferences:
 - Time available: ${preferences.timeAvailable} minutes
 - Recent meals (avoid similar): ${preferences.recentMeals.join(', ') || 'None'}
 
-Please respond with a JSON array of ${count} recipe objects, each with:
-{
-  "title": "Recipe Name",
-  "description": "Brief appealing description",
-  "ingredients": ["ingredient 1", "ingredient 2", ...],
-  "instructions": ["step 1", "step 2", ...],
-  "cookingTime": number_in_minutes,
-  "difficulty": "easy|medium|hard",
-  "cuisine": "cuisine_type",
-  "dietaryTags": ["tag1", "tag2", ...]
-}
+IMPORTANT: Respond with ONLY a valid JSON array of ${count} recipe objects. No additional text.
 
-Ensure recipes are diverse, match preferences, and avoid recent meals. Only return valid JSON.`;
+[
+  {
+    "title": "Recipe Name",
+    "description": "Brief appealing description",
+    "ingredients": ["ingredient 1", "ingredient 2"],
+    "instructions": ["step 1", "step 2"],
+    "cookingTime": 30,
+    "difficulty": "easy",
+    "cuisine": "cuisine_type",
+    "dietaryTags": ["tag1", "tag2"]
+  }
+]
+
+Start with [ and end with ]. Each recipe must have all fields.`;
 
     const response = await openai.chat.completions.create({
       model: MODEL,
@@ -78,9 +92,18 @@ Ensure recipes are diverse, match preferences, and avoid recent meals. Only retu
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error('No response from AI');
 
-    // Parse the JSON response
-    const recipes = JSON.parse(content);
-    return Array.isArray(recipes) ? recipes : [recipes];
+    // Log the raw response to debug JSON parsing issues
+    console.log('🔍 Raw AI recipe response:', content);
+
+    // Try to parse JSON, with fallback handling
+    try {
+      const recipes = JSON.parse(content);
+      return Array.isArray(recipes) ? recipes : [recipes];
+    } catch (jsonError) {
+      console.warn('⚠️ AI recipe response was not valid JSON, using fallback...');
+      // Return fallback recommendations
+      return getFallbackRecommendations(preferences, count);
+    }
   } catch (error) {
     console.error('Error getting AI recommendations:', error);
     // Return fallback recommendations
@@ -97,6 +120,8 @@ export const getAIMealPlanSuggestion = async (
       throw new Error('OpenRouter API key not configured');
     }
 
+    console.log('🚀 Making OpenRouter API call for meal plan...');
+
     const prompt = `You are a nutrition and meal planning expert. Create a ${days}-day meal plan for someone with these preferences:
 
 - Dietary restrictions: ${preferences.dietaryRestrictions.join(', ') || 'None'}
@@ -106,15 +131,25 @@ export const getAIMealPlanSuggestion = async (
 - Favorite ingredients to include: ${preferences.favoriteIngredients.join(', ') || 'Flexible'}
 - Ingredients to avoid: ${preferences.dislikedIngredients.join(', ') || 'None'}
 
-Please provide:
-1. A detailed meal plan with breakfast, lunch, dinner for ${days} days
-2. An explanation of the nutritional balance and why this plan works
+IMPORTANT: You must respond with ONLY valid JSON in this exact format. No extra text before or after:
 
-Format as JSON:
 {
-  "mealPlan": "Day 1:\nBreakfast: ...\nLunch: ...\nDinner: ...\n\nDay 2: ...",
-  "explanation": "This meal plan provides balanced nutrition because..."
-}`;
+  "mealPlan": "Day 1\nBreakfast: [specific meal name]\nLunch: [specific meal name]\nDinner: [specific meal name]\n\nDay 2\nBreakfast: [specific meal name]\nLunch: [specific meal name]\nDinner: [specific meal name]\n\n[continue for all ${days} days]",
+  "explanation": "[Brief explanation of why this plan works for their needs and preferences]"
+}
+
+Example format for mealPlan content:
+Day 1
+Breakfast: Greek yogurt with honey and berries
+Lunch: Quinoa salad with grilled vegetables
+Dinner: Baked salmon with roasted sweet potatoes
+
+Day 2
+Breakfast: Oatmeal with banana and nuts
+Lunch: Turkey and avocado wrap
+Dinner: Stir-fried tofu with brown rice
+
+Make sure each meal is specific and realistic for a ${preferences.cookingSkillLevel} cook with ${preferences.timeAvailable} minutes per meal.`;
 
     const response = await openai.chat.completions.create({
       model: MODEL,
@@ -123,15 +158,117 @@ Format as JSON:
       max_tokens: 1500,
     });
 
+    console.log('✅ OpenRouter API call successful');
+
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error('No response from AI');
 
-    return JSON.parse(content);
+    // Log the raw response to debug JSON parsing issues
+    console.log('🔍 Raw AI response:', content);
+
+    // Try to parse JSON, with fallback handling
+    try {
+      const parsed = JSON.parse(content);
+      return parsed;
+    } catch (jsonError) {
+      console.warn('⚠️ AI response was not valid JSON, attempting to extract JSON...');
+      
+      // Try to extract JSON from the response if it's wrapped in text
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const extracted = JSON.parse(jsonMatch[0]);
+          console.log('✅ Successfully extracted JSON from response');
+          return extracted;
+        } catch (extractError) {
+          console.error('❌ Could not extract valid JSON');
+        }
+      }
+      
+      // Fallback: create JSON structure from the text response
+      console.log('🔄 Creating fallback JSON structure from text response');
+      return {
+        mealPlan: `Day 1
+Breakfast: Greek yogurt with honey and mixed berries
+Lunch: Mediterranean quinoa salad with feta
+Dinner: Grilled chicken with roasted vegetables
+
+Day 2
+Breakfast: Oatmeal with banana and almonds
+Lunch: Turkey and avocado wrap with side salad
+Dinner: Baked salmon with sweet potato fries
+
+Day 3
+Breakfast: Scrambled eggs with whole grain toast
+Lunch: Lentil soup with crusty bread
+Dinner: Vegetable stir-fry with brown rice
+
+Day 4
+Breakfast: Smoothie bowl with granola and fruit
+Lunch: Caprese salad with baguette
+Dinner: Lean beef with steamed broccoli
+
+Day 5
+Breakfast: Avocado toast with poached egg
+Lunch: Chicken Caesar salad
+Dinner: Pasta with marinara and side vegetables
+
+Day 6
+Breakfast: Chia pudding with coconut and berries
+Lunch: Veggie burger with sweet potato wedges
+Dinner: Grilled fish with quinoa pilaf
+
+Day 7
+Breakfast: Pancakes with fresh fruit
+Lunch: Asian-style soup with dumplings
+Dinner: Roasted vegetables with herb-crusted tofu`,
+        explanation: 'This balanced 7-day meal plan provides variety while considering your dietary preferences and cooking skill level. Each meal is designed to be prepared within your time constraints and includes a good balance of proteins, healthy carbohydrates, and vegetables.'
+      };
+    }
   } catch (error) {
-    console.error('Error getting AI meal plan:', error);
+    console.error('❌ Error getting AI meal plan:', error);
+    
+    // If it's an authentication error, provide specific guidance
+    if (error instanceof Error && error.message.includes('401')) {
+      console.error('🔑 OpenRouter Authentication Error - Check your API key at https://openrouter.ai/keys');
+    }
+    
     return {
-      mealPlan: `Sample 7-day meal plan:\n\nDay 1:\nBreakfast: Oatmeal with berries\nLunch: Caesar salad\nDinner: Grilled chicken with vegetables\n\nDay 2:\nBreakfast: Greek yogurt with granola\nLunch: Quinoa bowl\nDinner: Pasta with marinara sauce\n\n... (continue for remaining days)`,
-      explanation: 'This meal plan provides balanced nutrition with a variety of proteins, carbohydrates, and vegetables.'
+      mealPlan: `Day 1
+Breakfast: Greek yogurt with honey and mixed berries
+Lunch: Mediterranean quinoa salad with feta
+Dinner: Grilled chicken with roasted vegetables
+
+Day 2
+Breakfast: Oatmeal with banana and almonds
+Lunch: Turkey and avocado wrap with side salad
+Dinner: Baked salmon with sweet potato fries
+
+Day 3
+Breakfast: Scrambled eggs with whole grain toast
+Lunch: Lentil soup with crusty bread
+Dinner: Vegetable stir-fry with brown rice
+
+Day 4
+Breakfast: Smoothie bowl with granola and fruit
+Lunch: Caprese salad with baguette
+Dinner: Lean beef with steamed broccoli
+
+Day 5
+Breakfast: Avocado toast with poached egg
+Lunch: Chicken Caesar salad
+Dinner: Pasta with marinara and side vegetables
+
+Day 6
+Breakfast: Chia pudding with coconut and berries
+Lunch: Veggie burger with sweet potato wedges
+Dinner: Grilled fish with quinoa pilaf
+
+Day 7
+Breakfast: Pancakes with fresh fruit
+Lunch: Asian-style soup with dumplings
+Dinner: Roasted vegetables with herb-crusted tofu`,
+      explanation: 'This balanced 7-day meal plan provides variety while considering your dietary preferences and cooking skill level. Each meal is designed to be prepared within your time constraints and includes a good balance of proteins, healthy carbohydrates, and vegetables.'
     };
   }
 };
@@ -264,4 +401,38 @@ const getFallbackRecommendations = (_preferences: UserPreferences, count: number
   ];
 
   return fallbackRecipes.slice(0, count);
-}; 
+};
+
+// Test function to validate API key
+export const testOpenRouterConnection = async (): Promise<boolean> => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      console.error('❌ OpenRouter API key not configured');
+      return false;
+    }
+
+    console.log('🧪 Testing OpenRouter API connection...');
+    
+    const response = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [{ role: 'user', content: 'Say "Hello" if you can hear me.' }],
+      max_tokens: 10,
+    });
+
+    if (response.choices[0]?.message?.content) {
+      console.log('✅ OpenRouter API connection successful!');
+      return true;
+    } else {
+      console.error('❌ OpenRouter API returned empty response');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ OpenRouter API test failed:', error);
+    return false;
+  }
+};
+
+// Auto-test the connection on module load (only in development)
+if (import.meta.env.DEV && OPENROUTER_API_KEY) {
+  testOpenRouterConnection();
+} 

@@ -6,8 +6,6 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
-  TouchSensor,
-  MouseSensor,
   KeyboardSensor,
   DragStartEvent,
   DragEndEvent
@@ -21,13 +19,18 @@ import {
   ShoppingCart, 
   BarChart3, 
   ArrowLeft, 
-  ArrowRight
+  ArrowRight,
+  Search,
+  Users,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { Recipe, MealPlan, MealType } from '@/types/recipe';
 import { useMealPlan } from '@/hooks/useMealPlan';
 import { MealSlot } from './MealSlot';
 import { DraggableRecipeCard } from './DraggableRecipeCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MealPlanningCalendarProps {
   recipes?: Recipe[];
@@ -35,6 +38,9 @@ interface MealPlanningCalendarProps {
   onGenerateShoppingList?: (mealPlans: MealPlan[]) => void;
   onViewNutrition?: (mealPlans: MealPlan[]) => void;
   onNavigateToSearch?: () => void;
+  onSearchRecipes?: (query: string) => void;
+  onRecipeSelect?: (recipe: Recipe) => void;
+  isSearching?: boolean;
 }
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -136,33 +142,38 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
   onGenerateShoppingList,
   onViewNutrition,
   onNavigateToSearch,
+  onSearchRecipes,
+  onRecipeSelect,
+  isSearching,
 }) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedRecipe, setDraggedRecipe] = useState<Recipe | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Serving size selection state
+  const [showServingSizeModal, setShowServingSizeModal] = useState(false);
+  const [pendingRecipeAdd, setPendingRecipeAdd] = useState<{
+    recipe: Recipe;
+    date: string;
+    mealType: MealType;
+  } | null>(null);
+  const [editingMealPlan, setEditingMealPlan] = useState<MealPlan | null>(null);
+  const [selectedServings, setSelectedServings] = useState(4);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   
   const { 
     mealPlans, 
     addRecipeToMealPlan, 
     removeMealPlanById, 
-    moveMealPlan 
+    moveMealPlan,
+    updateMealPlanById
   } = useMealPlan();
 
   // Use test recipes if no recipes are provided for debugging
   const availableRecipes = recipes.length > 0 ? recipes : (import.meta.env.DEV ? TEST_RECIPES : []);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }),
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
@@ -200,40 +211,42 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
     const activeIdStr = active.id.toString();
     setActiveId(activeIdStr);
     
-    console.log('🐛 Drag started with ID:', activeIdStr);
-    console.log('🐛 Available recipes:', availableRecipes.map(r => ({ id: r.id, title: r.title })));
-    console.log('🐛 Active data:', active.data);
+    console.log('🚀 DRAG START - ID:', activeIdStr);
+    console.log('🔍 Available recipes:', availableRecipes.map(r => ({ id: r.id, title: r.title })));
+    console.log('📊 Active data:', active.data.current);
     
     // Check if dragging a recipe from the sidebar (format: "recipe-123")
     if (activeIdStr.startsWith('recipe-')) {
       const recipeId = activeIdStr.replace('recipe-', '');
       const recipe = availableRecipes.find(r => r.id.toString() === recipeId);
       if (recipe) {
-        console.log('🐛 Found recipe for drag:', recipe.title);
+        console.log('✅ Found recipe for drag:', recipe.title);
         setDraggedRecipe(recipe);
         return;
       } else {
-        console.log('🐛 Recipe not found for ID:', recipeId, 'Available recipes:', availableRecipes.map(r => r.id));
+        console.log('❌ Recipe not found for ID:', recipeId);
+        console.log('🔍 Available recipe IDs:', availableRecipes.map(r => r.id));
       }
     }
     
     // Check if it's an existing meal plan being moved
     const existingPlan = mealPlans.find(plan => plan.id === activeIdStr);
     if (existingPlan) {
-      console.log('🐛 Found existing meal plan:', existingPlan.recipe.title);
+      console.log('✅ Found existing meal plan for move:', existingPlan.recipe.title);
       setDraggedRecipe(existingPlan.recipe);
     } else {
-      console.log('🐛 No recipe or meal plan found for ID:', activeIdStr);
+      console.log('❌ No recipe or meal plan found for ID:', activeIdStr);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    console.log('🐛 Drag ended - Active:', active?.id, 'Over:', over?.id);
+    console.log('🏁 DRAG END - Active:', active?.id, 'Over:', over?.id);
+    console.log('📍 Over data:', over?.data?.current);
     
     if (!over) {
-      console.log('🐛 No drop target found');
+      console.log('❌ No drop target found');
       setActiveId(null);
       setDraggedRecipe(null);
       return;
@@ -241,6 +254,8 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
 
     const activeIdStr = active.id.toString();
     const overIdStr = over.id.toString();
+
+    console.log('🎯 Drop target ID:', overIdStr);
 
     // Parse the drop target (format: "date-mealtype" e.g., "2024-01-15-lunch")
     const dropTargetParts = overIdStr.split('-');
@@ -259,10 +274,11 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
       targetMealType = dropTargetParts[1];
     }
     
-    console.log('🐛 Parsed drop target - Date:', targetDate, 'MealType:', targetMealType);
+    console.log('📅 Parsed drop target - Date:', targetDate, 'MealType:', targetMealType);
+    console.log('🍽️ Valid meal types:', MEAL_TYPES);
     
     if (!targetDate || !MEAL_TYPES.includes(targetMealType as MealType)) {
-      console.log('🐛 Invalid drop target format');
+      console.log('❌ Invalid drop target format or meal type');
       setActiveId(null);
       setDraggedRecipe(null);
       return;
@@ -272,17 +288,26 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
     if (draggedRecipe) {
       // Check if it's a new recipe being added
       if (activeIdStr.startsWith('recipe-')) {
-        console.log('🐛 Adding new recipe to meal plan:', draggedRecipe.title, targetDate, targetMealType);
-        addRecipeToMealPlan(draggedRecipe, targetDate, targetMealType as MealType);
-        onAddRecipe?.(draggedRecipe, targetDate, targetMealType as MealType);
+        console.log('🍽️ Opening serving size selection for:', draggedRecipe.title);
+        setPendingRecipeAdd({
+          recipe: draggedRecipe,
+          date: targetDate,
+          mealType: targetMealType as MealType
+        });
+        setSelectedServings(draggedRecipe.servings || 4); // Default to recipe's original serving size
+        setModalMode('add');
+        setShowServingSizeModal(true);
       } else {
         // It's an existing meal plan being moved
         const existingPlan = mealPlans.find(plan => plan.id === activeIdStr);
         if (existingPlan) {
-          console.log('🐛 Moving existing meal plan:', existingPlan.recipe.title);
+          console.log('🔄 Moving existing meal plan:', existingPlan.recipe.title);
           moveMealPlan(activeIdStr, targetDate, targetMealType as MealType);
+          console.log('✅ Meal plan moved successfully');
         }
       }
+    } else {
+      console.log('❌ No dragged recipe found');
     }
 
     setActiveId(null);
@@ -298,15 +323,90 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
   };
 
   const generateShoppingList = () => {
+    console.log('🛒 Generate shopping list clicked');
+    console.log('📊 All meal plans:', mealPlans.length);
+    console.log('📊 Week meal plans:', weekMealPlans.length);
+    console.log('📋 Meal plans details:', mealPlans);
+    
     if (onGenerateShoppingList) {
-      onGenerateShoppingList(weekMealPlans);
+      // Pass all meal plans instead of just the week's meal plans
+      onGenerateShoppingList(mealPlans);
     }
   };
 
   const viewNutrition = () => {
+    console.log('📊 View nutrition clicked');
+    console.log('📊 All meal plans:', mealPlans.length);
+    console.log('📊 Week meal plans:', weekMealPlans.length);
+    
     if (onViewNutrition) {
-      onViewNutrition(weekMealPlans);
+      // Pass all meal plans instead of just the week's meal plans
+      onViewNutrition(mealPlans);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim() || !onSearchRecipes) return;
+    
+    try {
+      await onSearchRecipes(searchQuery.trim());
+      setSearchQuery('');
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+  };
+
+  const handleConfirmServingSize = () => {
+    if (modalMode === 'add' && pendingRecipeAdd) {
+      console.log('➕ Adding recipe with serving size:', pendingRecipeAdd.recipe.title, selectedServings, 'servings');
+      addRecipeToMealPlan(
+        pendingRecipeAdd.recipe, 
+        pendingRecipeAdd.date, 
+        pendingRecipeAdd.mealType,
+        selectedServings
+      );
+      onAddRecipe?.(pendingRecipeAdd.recipe, pendingRecipeAdd.date, pendingRecipeAdd.mealType);
+      console.log('✅ Recipe added successfully with', selectedServings, 'servings');
+    } else if (modalMode === 'edit' && editingMealPlan) {
+      console.log('✏️ Updating serving size for:', editingMealPlan.recipe.title, 'from', editingMealPlan.servings, 'to', selectedServings);
+      updateMealPlanById(editingMealPlan.id, { servings: selectedServings });
+      console.log('✅ Serving size updated successfully');
+    }
+    
+    // Reset modal state
+    setShowServingSizeModal(false);
+    setPendingRecipeAdd(null);
+    setEditingMealPlan(null);
+    setSelectedServings(4);
+    setModalMode('add');
+  };
+
+  const handleCancelServingSize = () => {
+    console.log('❌ Serving size modal canceled');
+    setShowServingSizeModal(false);
+    setPendingRecipeAdd(null);
+    setEditingMealPlan(null);
+    setSelectedServings(4);
+    setModalMode('add');
+  };
+
+  const adjustServings = (direction: 'increase' | 'decrease') => {
+    setSelectedServings(prev => {
+      if (direction === 'increase') {
+        return Math.min(prev + 1, 20); // Max 20 servings
+      } else {
+        return Math.max(prev - 1, 1); // Min 1 serving
+      }
+    });
+  };
+
+  const handleEditServingSize = (mealPlan: MealPlan) => {
+    console.log('✏️ Editing serving size for:', mealPlan.recipe.title, 'current:', mealPlan.servings);
+    setEditingMealPlan(mealPlan);
+    setSelectedServings(mealPlan.servings);
+    setModalMode('edit');
+    setShowServingSizeModal(true);
   };
 
   return (
@@ -411,6 +511,8 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
                     date={day}
                     mealType={mealType}
                     onRemoveMeal={removeMealPlanById}
+                    onRecipeSelect={onRecipeSelect}
+                    onEditServingSize={handleEditServingSize}
                   />
                 );
               })}
@@ -418,56 +520,225 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
           ))}
         </div>
 
+        {/* Recipe Sidebar - Always visible for dragging */}
+        <div className="mt-8 border-t pt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-800">
+              📋 Drag Recipes to Calendar
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({availableRecipes.length} recipes available)
+              </span>
+              {activeId && (
+                <span className="ml-2 text-green-600 font-medium">🎯 Dragging...</span>
+              )}
+            </h3>
+            
+            {/* Search for more recipes */}
+            <form onSubmit={handleSearch} className="flex items-center gap-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for more recipes... (Press Enter)"
+                  className="w-64 px-4 py-2 pr-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                  disabled={isSearching}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch(e as any);
+                    }
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </div>
+              {isSearching && (
+                <div className="text-sm text-gray-500">Searching...</div>
+              )}
+            </form>
+          </div>
+          
+          {availableRecipes.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {availableRecipes.slice(0, 12).map(recipe => (
+                  <DraggableRecipeCard 
+                    key={`recipe-${recipe.id}`} 
+                    recipe={recipe}
+                  />
+                ))}
+              </div>
+              
+              {availableRecipes.length > 12 && (
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-gray-500">
+                    Showing 12 of {availableRecipes.length} recipes
+                  </p>
+                  <button
+                    onClick={() => {
+                      // Could expand to show more recipes
+                      console.log('Show more recipes functionality');
+                    }}
+                    className="mt-2 text-primary hover:text-primary/80 text-sm font-medium"
+                  >
+                    View all recipes →
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+              <div className="text-6xl mb-4">🔍</div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">No Recipes Available</h4>
+              <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                You need to search for recipes first before you can add them to your meal plan.
+              </p>
+              <button
+                onClick={() => {
+                  if (onNavigateToSearch) {
+                    onNavigateToSearch();
+                  } else {
+                    console.log('Navigate to search view');
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
+              >
+                🔍 Search for Recipes
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Drag Overlay */}
         <DragOverlay dropAnimation={null}>
           {activeId && draggedRecipe ? (
-            <div className="transform rotate-6 scale-105 opacity-90">
+            <div className="transform rotate-6 scale-105 opacity-90 pointer-events-none">
               <DraggableRecipeCard recipe={draggedRecipe} isDragging />
+            </div>
+          ) : activeId ? (
+            <div className="bg-primary text-white px-4 py-2 rounded-lg font-medium pointer-events-none">
+              Dragging: {activeId}
             </div>
           ) : null}
         </DragOverlay>
       </DndContext>
-
-      {/* Recipe Sidebar - Always visible for dragging */}
-      <div className="mt-8 border-t pt-8">
-        <h3 className="text-xl font-bold mb-4 text-gray-800">
-          📋 Drag Recipes to Calendar
-          <span className="text-sm font-normal text-gray-500 ml-2">
-            ({availableRecipes.length} recipes available)
-          </span>
-        </h3>
-        
-        {availableRecipes.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {availableRecipes.slice(0, 12).map(recipe => (
-              <DraggableRecipeCard 
-                key={`recipe-${recipe.id}`} 
-                recipe={recipe}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-            <div className="text-6xl mb-4">🔍</div>
-            <h4 className="text-lg font-semibold text-gray-800 mb-2">No Recipes Available</h4>
-            <p className="text-gray-600 mb-4 max-w-md mx-auto">
-              You need to search for recipes first before you can add them to your meal plan.
-            </p>
-            <button
-              onClick={() => {
-                if (onNavigateToSearch) {
-                  onNavigateToSearch();
-                } else {
-                  console.log('Navigate to search view');
-                }
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
+      
+      {/* Serving Size Selection Modal */}
+      <AnimatePresence>
+        {showServingSizeModal && (pendingRecipeAdd || editingMealPlan) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={handleCancelServingSize}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-md w-full p-6"
+              onClick={e => e.stopPropagation()}
             >
-              🔍 Search for Recipes
-            </button>
-          </div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {modalMode === 'add' ? 'Choose Serving Size' : 'Edit Serving Size'}
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  {modalMode === 'add' ? (
+                    <>How many servings of <span className="font-semibold text-primary">{pendingRecipeAdd?.recipe.title}</span> would you like to add?</>
+                  ) : (
+                    <>How many servings of <span className="font-semibold text-primary">{editingMealPlan?.recipe.title}</span> would you like?</>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <button
+                  onClick={() => adjustServings('decrease')}
+                  disabled={selectedServings <= 1}
+                  className="w-12 h-12 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-colors"
+                >
+                  <Minus className="w-5 h-5" />
+                </button>
+                
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-1">{selectedServings}</div>
+                  <div className="text-sm text-gray-500">
+                    {selectedServings === 1 ? 'serving' : 'servings'}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => adjustServings('increase')}
+                  disabled={selectedServings >= 20}
+                  className="w-12 h-12 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-6 p-4 bg-gray-50 rounded-xl">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Original recipe:</span>
+                  <span className="font-medium">
+                    {modalMode === 'add' ? pendingRecipeAdd?.recipe.servings : editingMealPlan?.recipe.servings} servings
+                  </span>
+                </div>
+                {modalMode === 'edit' && editingMealPlan && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Current meal plan:</span>
+                    <span className="font-medium">{editingMealPlan.servings} servings</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{modalMode === 'add' ? 'Your selection:' : 'New amount:'}</span>
+                  <span className="font-medium text-primary">{selectedServings} servings</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Meal type:</span>
+                  <span className="font-medium capitalize">
+                    {modalMode === 'add' ? pendingRecipeAdd?.mealType : editingMealPlan?.mealType}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Date:</span>
+                  <span className="font-medium">
+                    {modalMode === 'add' 
+                      ? format(new Date(pendingRecipeAdd?.date || ''), 'MMM d, yyyy')
+                      : format(new Date(editingMealPlan?.date || ''), 'MMM d, yyyy')
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelServingSize}
+                  className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmServingSize}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-primary to-purple-600 hover:shadow-lg text-white rounded-xl font-medium transition-all"
+                >
+                  {modalMode === 'add' ? 'Add to Meal Plan' : 'Update Serving Size'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }; 

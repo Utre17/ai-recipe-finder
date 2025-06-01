@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, Target, Calendar, Award } from 'lucide-react';
 import { MealPlan } from '@/types/recipe';
+import { format, startOfWeek, addDays } from 'date-fns';
 import { 
   PieChart, 
   Pie, 
@@ -23,27 +24,134 @@ interface NutritionDashboardProps {
   mealPlans: MealPlan[];
 }
 
+// Helper function to calculate nutrition from meal plans
+const calculateNutritionFromMealPlans = (mealPlans: MealPlan[]) => {
+  console.log('🥗 Calculating nutrition for meal plans:', mealPlans.length);
+  
+  if (mealPlans.length === 0) {
+    return {
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0,
+      dailyAverages: {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+      },
+      weeklyCalories: [],
+      macroData: [
+        { name: 'Protein', value: 33, color: '#8B5CF6' },
+        { name: 'Carbs', value: 34, color: '#06B6D4' },
+        { name: 'Fat', value: 33, color: '#F59E0B' },
+      ]
+    };
+  }
+
+  let totalCalories = 0;
+  let totalProtein = 0;
+  let totalCarbs = 0;
+  let totalFat = 0;
+
+  // Calculate nutrition from actual recipes
+  mealPlans.forEach(plan => {
+    const recipe = plan.recipe;
+    const servings = plan.servings;
+    
+    // Use Spoonacular nutrition data if available, otherwise estimate
+    const baseCalories = recipe.nutrition?.nutrients?.find(n => n.name === 'Calories')?.amount || 
+                        recipe.readyInMinutes * 20; // Rough estimate: 20 cal per minute
+    const baseProtein = recipe.nutrition?.nutrients?.find(n => n.name === 'Protein')?.amount || 
+                       baseCalories * 0.15 / 4; // 15% of calories from protein
+    const baseCarbs = recipe.nutrition?.nutrients?.find(n => n.name === 'Carbohydrates')?.amount || 
+                     baseCalories * 0.50 / 4; // 50% of calories from carbs
+    const baseFat = recipe.nutrition?.nutrients?.find(n => n.name === 'Fat')?.amount || 
+                   baseCalories * 0.35 / 9; // 35% of calories from fat
+
+    totalCalories += baseCalories * servings;
+    totalProtein += baseProtein * servings;
+    totalCarbs += baseCarbs * servings;
+    totalFat += baseFat * servings;
+  });
+
+  const uniqueDays = new Set(mealPlans.map(plan => plan.date)).size;
+  const dailyAverages = {
+    calories: uniqueDays > 0 ? Math.round(totalCalories / uniqueDays) : 0,
+    protein: uniqueDays > 0 ? Math.round(totalProtein / uniqueDays) : 0,
+    carbs: uniqueDays > 0 ? Math.round(totalCarbs / uniqueDays) : 0,
+    fat: uniqueDays > 0 ? Math.round(totalFat / uniqueDays) : 0
+  };
+
+  // Calculate macro percentages
+  const totalMacroCalories = (totalProtein * 4) + (totalCarbs * 4) + (totalFat * 9);
+  const macroData = totalMacroCalories > 0 ? [
+    { 
+      name: 'Protein', 
+      value: Math.round((totalProtein * 4 / totalMacroCalories) * 100), 
+      color: '#8B5CF6' 
+    },
+    { 
+      name: 'Carbs', 
+      value: Math.round((totalCarbs * 4 / totalMacroCalories) * 100), 
+      color: '#06B6D4' 
+    },
+    { 
+      name: 'Fat', 
+      value: Math.round((totalFat * 9 / totalMacroCalories) * 100), 
+      color: '#F59E0B' 
+    },
+  ] : [
+    { name: 'Protein', value: 33, color: '#8B5CF6' },
+    { name: 'Carbs', value: 34, color: '#06B6D4' },
+    { name: 'Fat', value: 33, color: '#F59E0B' },
+  ];
+
+  // Calculate weekly calories
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weeklyCalories = Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(weekStart, i);
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const dayMeals = mealPlans.filter(plan => plan.date === dayStr);
+    
+    const dayCalories = dayMeals.reduce((sum, plan) => {
+      const recipeCalories = plan.recipe.nutrition?.nutrients?.find(n => n.name === 'Calories')?.amount || 
+                            plan.recipe.readyInMinutes * 20;
+      return sum + (recipeCalories * plan.servings);
+    }, 0);
+
+    return {
+      day: format(day, 'EEE'),
+      calories: Math.round(dayCalories),
+      target: 2000
+    };
+  });
+
+  console.log('📊 Nutrition calculated:', { 
+    totalCalories, 
+    dailyAverages, 
+    macroData, 
+    weeklyCalories 
+  });
+
+  return {
+    totalCalories,
+    totalProtein,
+    totalCarbs,
+    totalFat,
+    dailyAverages,
+    weeklyCalories,
+    macroData
+  };
+};
+
 export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
   isOpen,
   onClose,
   mealPlans
 }) => {
-  // Mock nutrition data - in a real app this would be calculated from meal plans
-  const macroData = [
-    { name: 'Protein', value: 25, color: '#8B5CF6' },
-    { name: 'Carbs', value: 50, color: '#06B6D4' },
-    { name: 'Fat', value: 25, color: '#F59E0B' },
-  ];
-
-  const weeklyCalories = [
-    { day: 'Mon', calories: 2100, target: 2000 },
-    { day: 'Tue', calories: 1950, target: 2000 },
-    { day: 'Wed', calories: 2200, target: 2000 },
-    { day: 'Thu', calories: 1800, target: 2000 },
-    { day: 'Fri', calories: 2300, target: 2000 },
-    { day: 'Sat', calories: 2400, target: 2000 },
-    { day: 'Sun', calories: 1900, target: 2000 },
-  ];
+  // Calculate real nutrition from meal plans
+  const nutrition = useMemo(() => calculateNutritionFromMealPlans(mealPlans), [mealPlans]);
 
   const nutrients = [
     { name: 'Vitamin C', current: 85, target: 100, unit: 'mg' },
@@ -106,7 +214,9 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
                       <Calendar className="w-6 h-6 text-blue-600" />
                       <span className="font-semibold text-gray-800">Daily Average</span>
                     </div>
-                    <div className="text-3xl font-bold text-blue-600">2,050</div>
+                    <div className="text-3xl font-bold text-blue-600">
+                      {nutrition.dailyAverages.calories.toLocaleString()}
+                    </div>
                     <div className="text-sm text-gray-600">calories</div>
                   </div>
 
@@ -115,8 +225,10 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
                       <Target className="w-6 h-6 text-green-600" />
                       <span className="font-semibold text-gray-800">Goal Progress</span>
                     </div>
-                    <div className="text-3xl font-bold text-green-600">85%</div>
-                    <div className="text-sm text-gray-600">on track</div>
+                    <div className="text-3xl font-bold text-green-600">
+                      {nutrition.dailyAverages.calories > 0 ? Math.round((nutrition.dailyAverages.calories / 2000) * 100) : 0}%
+                    </div>
+                    <div className="text-sm text-gray-600">of 2000 cal target</div>
                   </div>
 
                   <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-6 border border-purple-100">
@@ -124,17 +236,19 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
                       <Award className="w-6 h-6 text-purple-600" />
                       <span className="font-semibold text-gray-800">Protein Goal</span>
                     </div>
-                    <div className="text-3xl font-bold text-purple-600">125g</div>
+                    <div className="text-3xl font-bold text-purple-600">
+                      {nutrition.dailyAverages.protein}g
+                    </div>
                     <div className="text-sm text-gray-600">daily average</div>
                   </div>
 
                   <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100">
                     <div className="flex items-center gap-3 mb-2">
                       <TrendingUp className="w-6 h-6 text-orange-600" />
-                      <span className="font-semibold text-gray-800">Weekly Trend</span>
+                      <span className="font-semibold text-gray-800">Total Meals</span>
                     </div>
-                    <div className="text-3xl font-bold text-orange-600">↗ 5%</div>
-                    <div className="text-sm text-gray-600">improvement</div>
+                    <div className="text-3xl font-bold text-orange-600">{mealPlans.length}</div>
+                    <div className="text-sm text-gray-600">planned</div>
                   </div>
                 </div>
 
@@ -147,14 +261,14 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
-                            data={macroData}
+                            data={nutrition.macroData}
                             cx="50%"
                             cy="50%"
                             outerRadius={80}
                             dataKey="value"
                             label={({name, value}) => `${name}: ${value}%`}
                           >
-                            {macroData.map((entry, index) => (
+                            {nutrition.macroData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
@@ -169,7 +283,7 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
                     <h3 className="text-lg font-bold text-gray-800 mb-4">Weekly Calorie Intake</h3>
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={weeklyCalories}>
+                        <BarChart data={nutrition.weeklyCalories}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="day" />
                           <YAxis />
@@ -215,7 +329,7 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Calorie Trend</h3>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={weeklyCalories}>
+                      <LineChart data={nutrition.weeklyCalories}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="day" />
                         <YAxis />

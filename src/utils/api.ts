@@ -3,16 +3,25 @@ import { Recipe, SearchFilters, ApiResponse } from '@/types/recipe';
 const API_KEY = import.meta.env.VITE_SPOONACULAR_API_KEY;
 const BASE_URL = 'https://api.spoonacular.com/recipes';
 
+// Debug logging
+console.log('🔑 API Configuration:', {
+  hasSpoonacularKey: !!API_KEY,
+  keyLength: API_KEY?.length || 0,
+  keyPreview: API_KEY ? `${API_KEY.substring(0, 8)}...` : 'Not set'
+});
+
 // Fallback to TheMealDB API if Spoonacular is not available
 const MEALDB_BASE_URL = 'https://www.themealdb.com/api/json/v1/1';
 
 export const searchRecipes = async (filters: SearchFilters): Promise<ApiResponse<Recipe>> => {
   try {
     if (!API_KEY) {
+      console.log('🔄 Using TheMealDB fallback API (no Spoonacular key)');
       // Fallback to TheMealDB API
       return await searchMealDBRecipes(filters);
     }
 
+    console.log('🚀 Using Spoonacular API with key');
     const params = new URLSearchParams({
       apiKey: API_KEY,
       query: filters.query,
@@ -31,13 +40,21 @@ export const searchRecipes = async (filters: SearchFilters): Promise<ApiResponse
     const response = await fetch(`${BASE_URL}/complexSearch?${params}`);
     
     if (!response.ok) {
+      console.error('❌ Spoonacular API error:', response.status, response.statusText);
+      if (response.status === 401) {
+        console.error('🔑 401 Unauthorized - Check your Spoonacular API key');
+        // Fallback to TheMealDB on auth error
+        console.log('🔄 Falling back to TheMealDB API');
+        return await searchMealDBRecipes(filters);
+      }
       throw new Error(`API Error: ${response.status}`);
     }
 
     return await response.json();
   } catch (error) {
     console.error('Error searching recipes:', error);
-    throw error;
+    console.log('🔄 Attempting TheMealDB fallback');
+    return await searchMealDBRecipes(filters);
   }
 };
 

@@ -39,27 +39,30 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
 
   const { 
     generateShoppingListFromMealPlans, 
-    toggleItemById
+    toggleItemById,
+    getShoppingListById
   } = useShoppingList();
   
   const { optimizeShoppingList, isLoading: aiLoading } = useAI();
 
   const generateList = async () => {
     setIsGenerating(true);
+    console.log('🛒 Generating shopping list from meal plans:', mealPlans.length, 'meal plans');
     try {
       const listId = generateShoppingListFromMealPlans(listName, mealPlans);
+      console.log('📋 Shopping list created with ID:', listId);
       if (listId) {
-        // You would fetch the created list here in a real app
-        // For now, we'll create a mock list for display
-        const mockList: ShoppingList = {
-          id: listId,
-          name: listName,
-          dateCreated: new Date().toISOString(),
-          items: [], // This would be populated by the hook
-          totalItems: 0,
-          checkedItems: 0,
-        };
-        setCurrentList(mockList);
+        // Add a small delay to ensure the list is saved to localStorage
+        setTimeout(() => {
+          const createdList = getShoppingListById(listId);
+          console.log('🔍 Retrieved shopping list:', createdList);
+          if (createdList) {
+            setCurrentList(createdList);
+            console.log('✅ Shopping list set successfully:', createdList.items.length, 'items');
+          } else {
+            console.error('❌ Created shopping list not found:', listId);
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Error generating shopping list:', error);
@@ -406,10 +409,48 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
                 <div>
                   <h4 className="font-bold text-gray-800 mb-3">Optimized Shopping Route:</h4>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <pre className="whitespace-pre-wrap text-gray-700 text-sm">
-                      {aiOptimization.optimizedList}
-                    </pre>
+                  <div className="space-y-3">
+                    {aiOptimization.optimizedList.split('\n\n').filter(section => section.trim()).map((section, index) => {
+                      const lines = section.split('\n').filter(line => line.trim());
+                      const sectionTitle = lines[0];
+                      const items = lines.slice(1);
+                      
+                      // Define section colors and icons
+                      const sectionStyles = {
+                        'PRODUCE': { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: '🥬' },
+                        'DAIRY': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: '🥛' },
+                        'MEAT': { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: '🥩' },
+                        'PANTRY': { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: '🥫' },
+                        'FROZEN': { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-800', icon: '🧊' },
+                        'BAKERY': { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', icon: '🍞' },
+                        'DEFAULT': { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800', icon: '🛒' }
+                      };
+                      
+                      const style = sectionStyles[sectionTitle.toUpperCase() as keyof typeof sectionStyles] || sectionStyles.DEFAULT;
+                      
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className={`${style.bg} ${style.border} border rounded-xl p-4`}
+                        >
+                          <h5 className={`font-semibold ${style.text} mb-3 flex items-center gap-2`}>
+                            <span className="text-lg">{style.icon}</span>
+                            {sectionTitle}
+                          </h5>
+                          <div className="space-y-2">
+                            {items.map((item, itemIndex) => (
+                              <div key={itemIndex} className="flex items-center gap-2 text-gray-700">
+                                <div className="w-2 h-2 bg-current rounded-full opacity-60"></div>
+                                <span className="text-sm">{item.replace(/^[-•]\s*/, '')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
                 

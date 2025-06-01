@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
 import { Clock, Users, GripVertical } from 'lucide-react';
@@ -13,8 +13,6 @@ export const DraggableRecipeCard: React.FC<DraggableRecipeCardProps> = ({
   recipe,
   isDragging = false,
 }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  
   const {
     attributes,
     listeners,
@@ -29,61 +27,47 @@ export const DraggableRecipeCard: React.FC<DraggableRecipeCardProps> = ({
     },
   });
 
-  // Prevent text selection during drag using native DOM events
-  useEffect(() => {
-    const element = cardRef.current;
-    if (!element) return;
-
-    const preventSelection = (e: Event) => {
-      e.preventDefault();
-      return false;
-    };
-
-    const preventDrag = (e: Event) => {
-      e.preventDefault();
-      return false;
-    };
-
-    element.addEventListener('selectstart', preventSelection);
-    element.addEventListener('dragstart', preventDrag);
-
-    return () => {
-      element.removeEventListener('selectstart', preventSelection);
-      element.removeEventListener('dragstart', preventDrag);
-    };
-  }, []);
-
-  // Combine refs
-  const setRefs = (element: HTMLDivElement | null) => {
-    cardRef.current = element;
-    setNodeRef(element);
-  };
-
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: 9999,
   } : undefined;
 
   // Debug logging
-  React.useEffect(() => {
+  useEffect(() => {
+    console.log('🔧 Recipe card mounted:', recipe.title, 'ID: recipe-' + recipe.id);
     if (isBeingDragged) {
       console.log('🐛 Recipe card is being dragged:', recipe.title);
     }
-  }, [isBeingDragged, recipe.title]);
+  }, [isBeingDragged, recipe.title, recipe.id]);
+
+  const handleClick = () => {
+    console.log('👆 Recipe card clicked:', recipe.title, 'ID: recipe-' + recipe.id);
+  };
+
+  const handleMouseDown = () => {
+    console.log('🖱️ Mouse down on recipe card:', recipe.title);
+  };
+
+  const handleMouseUp = () => {
+    console.log('🖱️ Mouse up on recipe card:', recipe.title);
+  };
 
   return (
     <motion.div
-      ref={setRefs}
+      ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
+      onClick={handleClick}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ 
         opacity: isBeingDragged ? 0.8 : 1, 
         scale: isBeingDragged ? 1.05 : 1,
       }}
       whileHover={{ scale: 1.02 }}
-      className={`group relative bg-white rounded-2xl overflow-hidden shadow-md border-2 cursor-grab active:cursor-grabbing transition-all touch-manipulation select-none ${
+      className={`group relative bg-white rounded-2xl overflow-hidden shadow-md border-2 cursor-grab active:cursor-grabbing transition-all ${
         isDragging || isBeingDragged
           ? 'border-primary shadow-lg rotate-3 z-50' 
           : 'border-transparent hover:border-primary/20 hover:shadow-lg'

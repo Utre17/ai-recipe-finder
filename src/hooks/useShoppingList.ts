@@ -61,8 +61,10 @@ export const useShoppingList = () => {
   }, [loadShoppingLists]);
 
   const getShoppingListById = useCallback((id: string) => {
-    return shoppingLists.find(list => list.id === id);
-  }, [shoppingLists]);
+    // Always fetch fresh data from localStorage to ensure we get the latest
+    const freshLists = getShoppingLists();
+    return freshLists.find(list => list.id === id);
+  }, []);
 
   return {
     shoppingLists,
