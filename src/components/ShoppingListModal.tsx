@@ -76,16 +76,28 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     } as ShoppingList;
   }, [mealPlans, listName]);
 
+  // Toggle item checked state (in memory only)
+  const [checkedState, setCheckedState] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    setCheckedState({}); // Reset when mealPlans change
+  }, [mealPlans]);
+  const handleToggleItem = (itemId: string) => {
+    setCheckedState(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
+
   // Organize items for display
   const organizedItems = useMemo(() => {
     if (!inMemoryList) return {};
-    let filteredItems = inMemoryList.items;
+    let filteredItems = inMemoryList.items.map(i => ({
+      ...i,
+      isChecked: checkedState[i.id] === true,
+    }));
     if (filterBy === 'checked') {
-      filteredItems = filteredItems.filter(item => item.checked);
+      filteredItems = filteredItems.filter(item => item.isChecked);
     } else if (filterBy === 'unchecked') {
-      filteredItems = filteredItems.filter(item => !item.checked);
+      filteredItems = filteredItems.filter(item => !item.isChecked);
     }
-    const grouped: Record<string, ShoppingListItem[]> = {};
+    const grouped: Record<string, typeof filteredItems> = {};
     filteredItems.forEach(item => {
       let groupKey = '';
       switch (sortBy) {
@@ -108,23 +120,14 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
       grouped[key].sort((a, b) => a.ingredient.localeCompare(b.ingredient));
     });
     return grouped;
-  }, [inMemoryList, sortBy, filterBy]);
-
-  // Toggle item checked state (in memory only)
-  const [checkedState, setCheckedState] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    setCheckedState({}); // Reset when mealPlans change
-  }, [mealPlans]);
-  const handleToggleItem = (itemId: string) => {
-    setCheckedState(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-  };
+  }, [inMemoryList, sortBy, filterBy, checkedState]);
 
   // Export and share functions (use inMemoryList)
   const exportList = () => {
     const listText = Object.entries(organizedItems)
       .map(([group, items]) => {
         const itemsText = items
-          .map(item => `${checkedState[item.id] ? '✓' : '○'} ${item.amount} ${item.unit} ${item.ingredient}`)
+          .map(item => `${item.isChecked ? '✓' : '○'} ${item.amount} ${item.unit} ${item.ingredient}`)
           .join('\n');
         return `${group.toUpperCase()}\n${itemsText}`;
       })
@@ -261,7 +264,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                          checkedState[item.id]
+                          item.isChecked
                             ? 'bg-green-50 border-green-200'
                             : 'bg-white border-gray-200 hover:border-gray-300'
                         }`}
@@ -269,16 +272,16 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                         <button
                           onClick={() => handleToggleItem(item.id)}
                           className={`flex-shrink-0 w-6 h-6 rounded-full border-2 transition-all ${
-                            checkedState[item.id]
+                            item.isChecked
                               ? 'bg-green-500 border-green-500 text-white'
                               : 'border-gray-300 hover:border-primary'
                           }`}
                         >
-                          {checkedState[item.id] ? (
+                          {item.isChecked ? (
                             <Check className="w-4 h-4" />
                           ) : null}
                         </button>
-                        <div className={`flex-1 ${checkedState[item.id] ? 'line-through text-gray-500' : ''}`}>
+                        <div className={`flex-1 ${item.isChecked ? 'line-through text-gray-500' : ''}`}>
                           <div className="font-medium">
                             {item.amount} {item.unit} {item.ingredient}
                           </div>

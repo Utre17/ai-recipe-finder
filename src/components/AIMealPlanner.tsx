@@ -176,7 +176,7 @@ export const AIMealPlanner: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Restrictions (comma-separated)</label>
                   <input
                     type="text"
-                    value={preferences.dietaryRestrictions.join(', ')}
+                    value={preferences.dietaryRestrictions?.join(', ') || ''}
                     onChange={e => updatePreferences({ dietaryRestrictions: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                     placeholder="e.g., gluten-free, keto, dairy-free"
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
@@ -186,7 +186,7 @@ export const AIMealPlanner: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Cuisines (comma-separated)</label>
                   <input
                     type="text"
-                    value={preferences.preferredCuisines.join(', ')}
+                    value={preferences.preferredCuisines?.join(', ') || ''}
                     onChange={e => updatePreferences({ preferredCuisines: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                     placeholder="e.g., Italian, Mexican, Asian"
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
@@ -196,7 +196,7 @@ export const AIMealPlanner: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Favorite Ingredients (comma-separated)</label>
                   <input
                     type="text"
-                    value={preferences.favoriteIngredients.join(', ')}
+                    value={preferences.favoriteIngredients?.join(', ') || ''}
                     onChange={e => updatePreferences({ favoriteIngredients: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                     placeholder="e.g., chicken, tomatoes, garlic"
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"

@@ -288,10 +288,11 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
         setShowServingSizeModal(true);
       } else {
         // It's an existing meal plan being moved
-        const existingPlan = mealPlans.find(plan => plan.id === activeIdStr);
+        const planId = activeIdStr.replace('meal-', '');
+        const existingPlan = mealPlans.find(plan => String(plan.id) === planId);
         if (existingPlan) {
           console.log('[MealPlanningCalendar] Moving existing meal plan:', existingPlan.recipe.title, 'to', targetDate, targetMealType);
-          moveMealPlan(activeIdStr, targetDate, targetMealType as MealType);
+          moveMealPlan(planId, targetDate, targetMealType as MealType);
           refreshMealPlans();
           console.log('[MealPlanningCalendar] Called refreshMealPlans after move.');
           console.log('✅ Meal plan moved successfully');
