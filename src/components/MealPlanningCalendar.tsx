@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { Recipe, MealPlan, MealType } from '@/types/recipe';
-import { useMealPlan } from '@/hooks/useMealPlan';
 import { MealSlot } from './MealSlot';
 import { DraggableRecipeCard } from './DraggableRecipeCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +40,12 @@ interface MealPlanningCalendarProps {
   onSearchRecipes?: (query: string) => void;
   onRecipeSelect?: (recipe: Recipe) => void;
   isSearching?: boolean;
+  mealPlans: MealPlan[];
+  addRecipeToMealPlan: (...args: any[]) => any;
+  updateMealPlanById: (...args: any[]) => any;
+  removeMealPlanById: (...args: any[]) => any;
+  moveMealPlan: (...args: any[]) => any;
+  refreshMealPlans: () => void;
 }
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -145,6 +150,12 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
   onSearchRecipes,
   onRecipeSelect,
   isSearching,
+  mealPlans,
+  addRecipeToMealPlan,
+  updateMealPlanById,
+  removeMealPlanById,
+  moveMealPlan,
+  refreshMealPlans
 }) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -161,14 +172,6 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
   const [editingMealPlan, setEditingMealPlan] = useState<MealPlan | null>(null);
   const [selectedServings, setSelectedServings] = useState(4);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  
-  const { 
-    mealPlans, 
-    addRecipeToMealPlan, 
-    removeMealPlanById, 
-    moveMealPlan,
-    updateMealPlanById
-  } = useMealPlan();
 
   // Use test recipes if no recipes are provided for debugging
   const availableRecipes = recipes.length > 0 ? recipes : (import.meta.env.DEV ? TEST_RECIPES : []);
@@ -287,8 +290,10 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
         // It's an existing meal plan being moved
         const existingPlan = mealPlans.find(plan => plan.id === activeIdStr);
         if (existingPlan) {
-          console.log('🔄 Moving existing meal plan:', existingPlan.recipe.title);
+          console.log('[MealPlanningCalendar] Moving existing meal plan:', existingPlan.recipe.title, 'to', targetDate, targetMealType);
           moveMealPlan(activeIdStr, targetDate, targetMealType as MealType);
+          refreshMealPlans();
+          console.log('[MealPlanningCalendar] Called refreshMealPlans after move.');
           console.log('✅ Meal plan moved successfully');
         }
       }
@@ -342,18 +347,22 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
 
   const handleConfirmServingSize = () => {
     if (modalMode === 'add' && pendingRecipeAdd) {
-      console.log('➕ Adding recipe with serving size:', pendingRecipeAdd.recipe.title, selectedServings, 'servings');
+      console.log('[MealPlanningCalendar] Adding recipe:', pendingRecipeAdd.recipe.title, pendingRecipeAdd.date, pendingRecipeAdd.mealType, selectedServings);
       addRecipeToMealPlan(
         pendingRecipeAdd.recipe, 
         pendingRecipeAdd.date, 
         pendingRecipeAdd.mealType,
         selectedServings
       );
+      refreshMealPlans();
+      console.log('[MealPlanningCalendar] Called refreshMealPlans after add.');
       onAddRecipe?.(pendingRecipeAdd.recipe, pendingRecipeAdd.date, pendingRecipeAdd.mealType);
       console.log('✅ Recipe added successfully with', selectedServings, 'servings');
     } else if (modalMode === 'edit' && editingMealPlan) {
-      console.log('✏️ Updating serving size for:', editingMealPlan.recipe.title, 'from', editingMealPlan.servings, 'to', selectedServings);
+      console.log('[MealPlanningCalendar] Updating serving size for:', editingMealPlan.recipe.title, 'from', editingMealPlan.servings, 'to', selectedServings);
       updateMealPlanById(editingMealPlan.id, { servings: selectedServings });
+      refreshMealPlans();
+      console.log('[MealPlanningCalendar] Called refreshMealPlans after edit.');
       console.log('✅ Serving size updated successfully');
     }
     

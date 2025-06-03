@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, Target, Calendar, Award } from 'lucide-react';
 import { MealPlan } from '@/types/recipe';
@@ -143,6 +143,12 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
 }) => {
   // Calculate real nutrition from meal plans
   const nutrition = useMemo(() => calculateNutritionFromMealPlans(mealPlans), [mealPlans]);
+
+  // If you add any local state in the future, reset it here:
+  useEffect(() => {
+    // Example: reset any local state if mealPlans changes
+    // setSomeState(defaultValue);
+  }, [mealPlans]);
 
   const nutrients = [
     { name: 'Vitamin C', current: 85, target: 100, unit: 'mg' },

@@ -19,6 +19,8 @@ const defaultPreferences: UserPreferences = {
   cookingSkillLevel: 'beginner',
   timeAvailable: 30,
   recentMeals: [],
+  dietType: '',
+  excludeIngredients: [],
 };
 
 export const useAI = () => {

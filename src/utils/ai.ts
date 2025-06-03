@@ -45,6 +45,8 @@ export interface UserPreferences {
   cookingSkillLevel: 'beginner' | 'intermediate' | 'advanced';
   timeAvailable: number; // minutes
   recentMeals: string[];
+  dietType?: string; // e.g., 'vegetarian', 'vegan', etc.
+  excludeIngredients?: string[];
 }
 
 export const getAIRecipeRecommendations = async (
@@ -66,6 +68,8 @@ User Preferences:
 - Cooking skill: ${preferences.cookingSkillLevel}
 - Time available: ${preferences.timeAvailable} minutes
 - Recent meals (avoid similar): ${preferences.recentMeals.join(', ') || 'None'}
+${preferences.dietType ? `- Diet type: ${preferences.dietType}` : ''}
+${preferences.excludeIngredients && preferences.excludeIngredients.length > 0 ? `- Exclude ingredients: ${preferences.excludeIngredients.join(', ')}` : ''}
 
 IMPORTANT: Respond with ONLY a valid JSON array of ${count} recipe objects. No additional text.
 
@@ -135,6 +139,21 @@ export const getAIMealPlanSuggestion = async (
 
     console.log('🚀 Making OpenRouter API call for meal plan...');
 
+    // Strict dietary instructions
+    let strictDietInstructions = '';
+    if (preferences.dietType) {
+      strictDietInstructions += `IMPORTANT: Every meal must be strictly ${preferences.dietType}.\n`;
+      if (preferences.dietType.toLowerCase() === 'vegetarian') {
+        strictDietInstructions += 'Do not include any meat, poultry, or fish in any meal.\n';
+      }
+      if (preferences.dietType.toLowerCase() === 'vegan') {
+        strictDietInstructions += 'Do not include any animal products, dairy, eggs, meat, poultry, or fish in any meal.\n';
+      }
+    }
+    if (preferences.excludeIngredients && preferences.excludeIngredients.length > 0) {
+      strictDietInstructions += `Do not include these ingredients in any meal: ${preferences.excludeIngredients.join(', ')}.\n`;
+    }
+
     const prompt = `You are a nutrition and meal planning expert. Create a ${days}-day meal plan for someone with these preferences:
 
 - Dietary restrictions: ${preferences.dietaryRestrictions.join(', ') || 'None'}
@@ -143,7 +162,10 @@ export const getAIMealPlanSuggestion = async (
 - Time per meal: ${preferences.timeAvailable} minutes max
 - Favorite ingredients to include: ${preferences.favoriteIngredients.join(', ') || 'Flexible'}
 - Ingredients to avoid: ${preferences.dislikedIngredients.join(', ') || 'None'}
+${preferences.dietType ? `- Diet type: ${preferences.dietType}` : ''}
+${preferences.excludeIngredients && preferences.excludeIngredients.length > 0 ? `- Exclude ingredients: ${preferences.excludeIngredients.join(', ')}` : ''}
 
+${strictDietInstructions}
 IMPORTANT: You must respond with ONLY valid JSON in this exact format. No extra text before or after:
 
 {
@@ -167,7 +189,7 @@ Make sure each meal is specific and realistic for a ${preferences.cookingSkillLe
     const response = await openai.chat.completions.create({
       model: MODEL,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
+      temperature: 1.0,
       max_tokens: 1500,
     });
 
@@ -196,7 +218,6 @@ Make sure each meal is specific and realistic for a ${preferences.cookingSkillLe
       }
     } catch (jsonError) {
       console.warn('⚠️ AI response was not valid JSON, attempting to extract JSON...');
-      
       // Try to extract JSON from the response if it's wrapped in text
       // Fixed: Use non-greedy matching to avoid capturing multiple objects
       const jsonMatch = content.match(/\{[\s\S]*?\}/);
@@ -209,94 +230,106 @@ Make sure each meal is specific and realistic for a ${preferences.cookingSkillLe
           console.error('❌ Could not extract valid JSON');
         }
       }
-      
       // Fallback: create JSON structure from the text response
       console.log('🔄 Creating fallback JSON structure from text response');
-      return {
-        mealPlan: `Day 1
-Breakfast: Greek yogurt with honey and mixed berries
-Lunch: Mediterranean quinoa salad with feta
-Dinner: Grilled chicken with roasted vegetables
-
-Day 2
-Breakfast: Oatmeal with banana and almonds
-Lunch: Turkey and avocado wrap with side salad
-Dinner: Baked salmon with sweet potato fries
-
-Day 3
-Breakfast: Scrambled eggs with whole grain toast
-Lunch: Lentil soup with crusty bread
-Dinner: Vegetable stir-fry with brown rice
-
-Day 4
-Breakfast: Smoothie bowl with granola and fruit
-Lunch: Caprese salad with baguette
-Dinner: Lean beef with steamed broccoli
-
-Day 5
-Breakfast: Avocado toast with poached egg
-Lunch: Chicken Caesar salad
-Dinner: Pasta with marinara and side vegetables
-
-Day 6
-Breakfast: Chia pudding with coconut and berries
-Lunch: Veggie burger with sweet potato wedges
-Dinner: Grilled fish with quinoa pilaf
-
-Day 7
-Breakfast: Pancakes with fresh fruit
-Lunch: Asian-style soup with dumplings
-Dinner: Roasted vegetables with herb-crusted tofu`,
-        explanation: 'This balanced 7-day meal plan provides variety while considering your dietary preferences and cooking skill level. Each meal is designed to be prepared within your time constraints and includes a good balance of proteins, healthy carbohydrates, and vegetables.'
-      };
+      return generateRandomFallbackMealPlan(days, preferences);
     }
   } catch (error) {
     console.error('❌ Error getting AI meal plan:', error);
-    
     // If it's an authentication error, provide specific guidance
     if (error instanceof Error && error.message.includes('401')) {
       console.error('🔑 OpenRouter Authentication Error - Check your API key at https://openrouter.ai/keys');
     }
-    
-    return {
-      mealPlan: `Day 1
-Breakfast: Greek yogurt with honey and mixed berries
-Lunch: Mediterranean quinoa salad with feta
-Dinner: Grilled chicken with roasted vegetables
-
-Day 2
-Breakfast: Oatmeal with banana and almonds
-Lunch: Turkey and avocado wrap with side salad
-Dinner: Baked salmon with sweet potato fries
-
-Day 3
-Breakfast: Scrambled eggs with whole grain toast
-Lunch: Lentil soup with crusty bread
-Dinner: Vegetable stir-fry with brown rice
-
-Day 4
-Breakfast: Smoothie bowl with granola and fruit
-Lunch: Caprese salad with baguette
-Dinner: Lean beef with steamed broccoli
-
-Day 5
-Breakfast: Avocado toast with poached egg
-Lunch: Chicken Caesar salad
-Dinner: Pasta with marinara and side vegetables
-
-Day 6
-Breakfast: Chia pudding with coconut and berries
-Lunch: Veggie burger with sweet potato wedges
-Dinner: Grilled fish with quinoa pilaf
-
-Day 7
-Breakfast: Pancakes with fresh fruit
-Lunch: Asian-style soup with dumplings
-Dinner: Roasted vegetables with herb-crusted tofu`,
-      explanation: 'This balanced 7-day meal plan provides variety while considering your dietary preferences and cooking skill level. Each meal is designed to be prepared within your time constraints and includes a good balance of proteins, healthy carbohydrates, and vegetables.'
-    };
+    return generateRandomFallbackMealPlan(days, preferences);
   }
 };
+
+// Helper: Generate a random fallback meal plan for the given number of days, filtered by preferences
+function generateRandomFallbackMealPlan(days: number, preferences?: UserPreferences): { mealPlan: string; explanation: string } {
+  const breakfastOptions = [
+    'Greek yogurt with honey and berries',
+    'Oatmeal with banana and almonds',
+    'Scrambled eggs with whole grain toast',
+    'Smoothie bowl with granola and fruit',
+    'Avocado toast with poached egg',
+    'Chia pudding with coconut and berries',
+    'Pancakes with fresh fruit',
+    'Spinach and feta omelette',
+    'Breakfast burrito with salsa',
+    'Muesli with nuts and dried fruit',
+  ];
+  const lunchOptions = [
+    'Quinoa salad with grilled vegetables',
+    'Turkey and avocado wrap with side salad',
+    'Lentil soup with crusty bread',
+    'Caprese salad with baguette',
+    'Chicken Caesar salad',
+    'Veggie burger with sweet potato wedges',
+    'Asian-style soup with dumplings',
+    'Grilled cheese and tomato soup',
+    'Falafel wrap with tahini sauce',
+    'Sushi bowl with edamame',
+  ];
+  const dinnerOptions = [
+    'Baked salmon with sweet potato fries',
+    'Stir-fried tofu with brown rice',
+    'Vegetable stir-fry with brown rice',
+    'Lean beef with steamed broccoli',
+    'Pasta with marinara and side vegetables',
+    'Grilled fish with quinoa pilaf',
+    'Roasted vegetables with herb-crusted tofu',
+    'Chicken stir-fry with snap peas',
+    'Stuffed bell peppers with rice',
+    'Eggplant parmesan with salad',
+  ];
+  // Helper: filter meals by diet/exclusions
+  function filterMeal(meal: string): boolean {
+    if (!preferences) return true;
+    const lowerMeal = meal.toLowerCase();
+    // Diet type
+    if (preferences.dietType) {
+      if (preferences.dietType.toLowerCase() === 'vegetarian') {
+        // Exclude meat, poultry, fish
+        if (/(chicken|beef|pork|turkey|fish|salmon|tuna|shrimp|bacon|ham|lamb|duck|crab|lobster|meat)/.test(lowerMeal)) return false;
+      }
+      if (preferences.dietType.toLowerCase() === 'vegan') {
+        // Exclude all animal products
+        if (/(chicken|beef|pork|turkey|fish|salmon|tuna|shrimp|bacon|ham|lamb|duck|crab|lobster|meat|egg|cheese|yogurt|milk|butter|cream|honey)/.test(lowerMeal)) return false;
+      }
+    }
+    // Exclude ingredients
+    if (preferences.excludeIngredients && preferences.excludeIngredients.length > 0) {
+      for (const excl of preferences.excludeIngredients) {
+        if (excl && excl.length > 1 && lowerMeal.includes(excl.toLowerCase())) return false;
+      }
+    }
+    return true;
+  }
+  // Shuffle helper
+  function shuffle<T>(arr: T[]): T[] {
+    return arr
+      .map((a) => ({ sort: Math.random(), value: a }))
+      .sort((a, b) => a.sort - b.sort)
+      .map((a) => a.value);
+  }
+  let mealPlan = '';
+  let usedBreakfasts = shuffle(breakfastOptions.filter(filterMeal));
+  let usedLunches = shuffle(lunchOptions.filter(filterMeal));
+  let usedDinners = shuffle(dinnerOptions.filter(filterMeal));
+  for (let i = 0; i < days; i++) {
+    if (usedBreakfasts.length === 0) usedBreakfasts = shuffle(breakfastOptions.filter(filterMeal));
+    if (usedLunches.length === 0) usedLunches = shuffle(lunchOptions.filter(filterMeal));
+    if (usedDinners.length === 0) usedDinners = shuffle(dinnerOptions.filter(filterMeal));
+    mealPlan += `Day ${i + 1}\n`;
+    mealPlan += `Breakfast: ${usedBreakfasts.pop()}\n`;
+    mealPlan += `Lunch: ${usedLunches.pop()}\n`;
+    mealPlan += `Dinner: ${usedDinners.pop()}\n\n`;
+  }
+  return {
+    mealPlan: mealPlan.trim(),
+    explanation: `This randomized ${days}-day meal plan provides variety and balance, with different meals each day. Each meal is designed to be nutritious and easy to prepare and filtered to match your preferences.`,
+  };
+}
 
 export const modifyRecipeWithAI = async (
   recipe: Recipe,

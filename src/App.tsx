@@ -29,7 +29,8 @@ const App: React.FC = () => {
   const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const { mealPlans } = useMealPlan();
+  const mealPlanHook = useMealPlan();
+  const { mealPlans, addRecipeToMealPlan, updateMealPlanById, removeMealPlanById, moveMealPlan, refreshMealPlans } = mealPlanHook;
 
   const handleSearch = (newFilters: SearchFilters) => {
     setFilters(newFilters);
@@ -267,6 +268,12 @@ const App: React.FC = () => {
                   onSearchRecipes={handleMealPlannerSearch}
                   onRecipeSelect={handleRecipeSelect}
                   isSearching={isSearching}
+                  mealPlans={mealPlans}
+                  addRecipeToMealPlan={addRecipeToMealPlan}
+                  updateMealPlanById={updateMealPlanById}
+                  removeMealPlanById={removeMealPlanById}
+                  moveMealPlan={moveMealPlan}
+                  refreshMealPlans={refreshMealPlans}
                 />
               </motion.div>
             )}
@@ -342,6 +349,7 @@ const App: React.FC = () => {
           />
         )}
 
+        {console.log('[App] mealPlans passed to modals:', mealPlans)}
         <ShoppingListModal
           isOpen={showShoppingModal}
           onClose={() => setShowShoppingModal(false)}

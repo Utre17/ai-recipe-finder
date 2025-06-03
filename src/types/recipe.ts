@@ -177,6 +177,15 @@ export interface UserPreferences {
   nutritionalGoals: NutritionalGoals;
   favoriteApiSource: 'spoonacular' | 'mealdb';
   autoGenerateShoppingList: boolean;
+  favoriteIngredients?: string[];
+  dietaryRestrictions?: string[];
+  dislikedIngredients?: string[];
+  preferredCuisines?: string[];
+  cookingSkillLevel?: 'beginner' | 'intermediate' | 'advanced';
+  timeAvailable?: number;
+  recentMeals?: string[];
+  dietType?: string;
+  excludeIngredients?: string[];
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'; 

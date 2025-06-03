@@ -8,14 +8,17 @@ import {
   RefreshCw,
   Clock,
   CheckCircle,
-  Info
+  Info,
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useAI } from '@/hooks/useAI';
 
 export const AIMealPlanner: React.FC = () => {
-  const { getMealPlan, preferences, isLoading } = useAI();
+  const { getMealPlan, preferences, updatePreferences, isLoading } = useAI();
   const [mealPlan, setMealPlan] = useState<{ mealPlan: string; explanation: string } | null>(null);
   const [selectedDays, setSelectedDays] = useState(7);
+  const [showPreferences, setShowPreferences] = useState(false);
 
   const handleGenerateMealPlan = async () => {
     const plan = await getMealPlan(selectedDays);
@@ -35,6 +38,18 @@ export const AIMealPlanner: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Diet type options
+  const dietTypes = [
+    '',
+    'vegetarian',
+    'vegan',
+    'keto',
+    'gluten-free',
+    'paleo',
+    'low-carb',
+    'high-protein',
+  ];
+
   return (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header */}
@@ -51,6 +66,14 @@ export const AIMealPlanner: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPreferences(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium shadow transition-colors"
+              title="Preferences"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span className="hidden sm:inline">Preferences</span>
+            </button>
             <select
               value={selectedDays}
               onChange={(e) => setSelectedDays(parseInt(e.target.value))}
@@ -76,6 +99,122 @@ export const AIMealPlanner: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Preferences Modal */}
+      <AnimatePresence>
+        {showPreferences && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPreferences(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-md w-full max-h-[80vh] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-xl font-bold gradient-text">Meal Plan Preferences</h2>
+                <button
+                  onClick={() => setShowPreferences(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Diet Type</label>
+                  <select
+                    value={preferences.dietType || ''}
+                    onChange={e => updatePreferences({ dietType: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  >
+                    {dietTypes.map(type => (
+                      <option key={type} value={type}>{type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Any'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Skill Level</label>
+                  <select
+                    value={preferences.cookingSkillLevel}
+                    onChange={e => updatePreferences({ cookingSkillLevel: e.target.value as 'beginner' | 'intermediate' | 'advanced' })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Prep Time (minutes)</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={180}
+                    value={preferences.timeAvailable}
+                    onChange={e => updatePreferences({ timeAvailable: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Exclude Ingredients (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={preferences.excludeIngredients?.join(', ') || ''}
+                    onChange={e => updatePreferences({ excludeIngredients: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                    placeholder="e.g., peanuts, shellfish, mushrooms"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Restrictions (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={preferences.dietaryRestrictions.join(', ')}
+                    onChange={e => updatePreferences({ dietaryRestrictions: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                    placeholder="e.g., gluten-free, keto, dairy-free"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Cuisines (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={preferences.preferredCuisines.join(', ')}
+                    onChange={e => updatePreferences({ preferredCuisines: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                    placeholder="e.g., Italian, Mexican, Asian"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Favorite Ingredients (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={preferences.favoriteIngredients.join(', ')}
+                    onChange={e => updatePreferences({ favoriteIngredients: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                    placeholder="e.g., chicken, tomatoes, garlic"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-100">
+                <button
+                  onClick={() => setShowPreferences(false)}
+                  className="w-full py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:shadow-lg transition-all font-medium"
+                >
+                  Save Preferences
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Content */}
       <div className="p-6">
