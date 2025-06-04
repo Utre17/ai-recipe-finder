@@ -3,3 +3,6 @@ node_modules
 .cursor
 .remember
 docs
+.cursor/rules
+.remember/memory
+docs
