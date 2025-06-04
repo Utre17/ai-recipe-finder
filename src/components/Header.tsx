@@ -17,19 +17,19 @@ export const Header: React.FC = () => {
   return (
     <>
       <header className="bg-white/80 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
                 <ChefHat className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text">Recipe Finder</span>
+              <span className="text-lg sm:text-xl font-bold gradient-text">Recipe Finder</span>
             </div>
             
-            <nav className="flex items-center gap-6">
+            <nav className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-6 w-full sm:w-auto">
               <button
                 onClick={handleShowFavorites}
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/50 hover:bg-white/70 transition-colors border border-white/20"
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/50 hover:bg-white/70 transition-colors border border-white/20 w-full sm:w-auto justify-center"
               >
                 <Heart className="w-5 h-5 text-red-500" />
                 <span className="font-medium">Favorites</span>

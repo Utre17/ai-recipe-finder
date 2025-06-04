@@ -91,7 +91,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-none sm:rounded-3xl max-w-full sm:max-w-4xl w-full max-h-[90vh] overflow-hidden p-2 sm:p-0"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -99,13 +99,13 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
               <img
                 src={recipe.image}
                 alt={recipe.title}
-                className="w-full h-64 object-cover"
+                className="w-full h-48 sm:h-64 object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition-colors"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition-colors min-w-[44px] min-h-[44px]"
               >
                 <X className="w-6 h-6" />
               </button>

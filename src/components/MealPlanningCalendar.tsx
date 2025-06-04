@@ -8,7 +8,8 @@ import {
   PointerSensor,
   KeyboardSensor,
   DragStartEvent,
-  DragEndEvent
+  DragEndEvent,
+  TouchSensor
 } from '@dnd-kit/core';
 import { 
   restrictToWindowEdges,
@@ -180,6 +181,12 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -403,55 +410,49 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-3xl shadow-lg">
+    <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 bg-white rounded-3xl shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-6 sm:mb-8 gap-2 sm:gap-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-3">
             <Calendar className="w-8 h-8 text-primary" />
-            <h2 className="text-3xl font-bold gradient-text">Meal Planning</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold gradient-text">Meal Planning</h2>
           </div>
-          
-          <div className="flex items-center gap-2 bg-gray-100 rounded-2xl p-1">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-2xl p-1 mt-2 sm:mt-0">
             <button
               onClick={() => navigateWeek('prev')}
-              className="p-2 rounded-xl hover:bg-white transition-colors"
+              className="p-2 rounded-xl hover:bg-white transition-colors min-w-[44px] min-h-[44px]"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            
-            <div className="px-4 py-2 font-semibold min-w-[200px] text-center">
+            <div className="px-4 py-2 font-semibold min-w-[120px] sm:min-w-[200px] text-center text-sm sm:text-base">
               {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d, yyyy')}
             </div>
-            
             <button
               onClick={() => navigateWeek('next')}
-              className="p-2 rounded-xl hover:bg-white transition-colors"
+              className="p-2 rounded-xl hover:bg-white transition-colors min-w-[44px] min-h-[44px]"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
           <button
             onClick={goToToday}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium min-w-[44px] min-h-[44px]"
           >
             Today
           </button>
-          
           <button
             onClick={generateShoppingList}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors font-medium min-w-[44px] min-h-[44px]"
           >
             <ShoppingCart className="w-5 h-5" />
             Shopping List
           </button>
-          
           <button
             onClick={viewNutrition}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-medium min-w-[44px] min-h-[44px]"
           >
             <BarChart3 className="w-5 h-5" />
             Nutrition
@@ -467,56 +468,58 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
         modifiers={[restrictToWindowEdges]}
       >
         {/* Calendar Grid */}
-        <div className="grid grid-cols-8 gap-4">
-          {/* Meal Type Header */}
-          <div className=""></div>
-          {DAYS_OF_WEEK.map((day, index) => (
-            <div key={day} className="text-center">
-              <div className="font-semibold text-gray-600 mb-1">{day}</div>
-              <div className={`text-2xl font-bold ${
-                isSameDay(weekDays[index], new Date()) 
-                  ? 'text-primary' 
-                  : 'text-gray-800'
-              }`}>
-                {format(weekDays[index], 'd')}
+        <div className="overflow-x-auto pb-4">
+          <div className="min-w-[700px] grid grid-cols-8 gap-2 sm:gap-4">
+            {/* Meal Type Header */}
+            <div className=""></div>
+            {DAYS_OF_WEEK.map((day, index) => (
+              <div key={day} className="text-center">
+                <div className="font-semibold text-gray-600 mb-1">{day}</div>
+                <div className={`text-2xl font-bold ${
+                  isSameDay(weekDays[index], new Date()) 
+                    ? 'text-primary' 
+                    : 'text-gray-800'
+                }`}>
+                  {format(weekDays[index], 'd')}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {/* Meal Rows */}
-          {MEAL_TYPES.map(mealType => (
-            <React.Fragment key={mealType}>
-              {/* Meal Type Label */}
-              <div className="flex items-center justify-center p-4 bg-gray-50 rounded-2xl">
-                <span className="font-semibold text-gray-700 capitalize">{mealType}</span>
-              </div>
-              
-              {/* Day Columns */}
-              {weekDays.map(day => {
-                const dateStr = format(day, 'yyyy-MM-dd');
-                const dayMeals = getMealPlansForDay(day, mealType);
+            {/* Meal Rows */}
+            {MEAL_TYPES.map(mealType => (
+              <React.Fragment key={mealType}>
+                {/* Meal Type Label */}
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-2xl">
+                  <span className="font-semibold text-gray-700 capitalize">{mealType}</span>
+                </div>
                 
-                return (
-                  <MealSlot
-                    key={`${dateStr}-${mealType}`}
-                    id={`${dateStr}-${mealType}`}
-                    mealPlans={dayMeals}
-                    date={day}
-                    mealType={mealType}
-                    onRemoveMeal={removeMealPlanById}
-                    onRecipeSelect={onRecipeSelect}
-                    onEditServingSize={handleEditServingSize}
-                  />
-                );
-              })}
-            </React.Fragment>
-          ))}
+                {/* Day Columns */}
+                {weekDays.map(day => {
+                  const dateStr = format(day, 'yyyy-MM-dd');
+                  const dayMeals = getMealPlansForDay(day, mealType);
+                  
+                  return (
+                    <MealSlot
+                      key={`${dateStr}-${mealType}`}
+                      id={`${dateStr}-${mealType}`}
+                      mealPlans={dayMeals}
+                      date={day}
+                      mealType={mealType}
+                      onRemoveMeal={removeMealPlanById}
+                      onRecipeSelect={onRecipeSelect}
+                      onEditServingSize={handleEditServingSize}
+                    />
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        {/* Recipe Sidebar - Always visible for dragging */}
-        <div className="mt-8 border-t pt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">
+        {/* Recipe Sidebar */}
+        <div className="mt-6 sm:mt-8 border-t pt-6 sm:pt-8">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-4 gap-2 sm:gap-0">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">
               📋 Drag Recipes to Calendar
               <span className="text-sm font-normal text-gray-500 ml-2">
                 ({availableRecipes.length} recipes available)
@@ -525,16 +528,15 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
                 <span className="ml-2 text-green-600 font-medium">🎯 Dragging...</span>
               )}
             </h3>
-            
             {/* Search for more recipes */}
-            <form onSubmit={handleSearch} className="flex items-center gap-2">
-              <div className="relative">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative w-full sm:w-64">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for more recipes... (Press Enter)"
-                  className="w-64 px-4 py-2 pr-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                   disabled={isSearching}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -556,10 +558,9 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
               )}
             </form>
           </div>
-          
           {availableRecipes.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {availableRecipes.slice(0, 12).map(recipe => (
                   <DraggableRecipeCard 
                     key={`recipe-${recipe.id}`} 
@@ -567,7 +568,6 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
                   />
                 ))}
               </div>
-              
               {availableRecipes.length > 12 && (
                 <div className="mt-4 text-center">
                   <p className="text-sm text-gray-500">
@@ -600,7 +600,7 @@ export const MealPlanningCalendar: React.FC<MealPlanningCalendarProps> = ({
                     console.log('Navigate to search view');
                   }
                 }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium w-full sm:w-auto"
               >
                 🔍 Search for Recipes
               </button>

@@ -14,12 +14,11 @@ A modern, AI-powered React application for discovering recipes, planning meals, 
 - **AI Recipe Recommendations**: Personalized suggestions based on your dietary preferences and cooking skills
 - **AI Meal Planning**: Generate complete meal plans with nutritional explanations
 - **AI Recipe Modifications**: Adapt any recipe for dietary restrictions (vegan, gluten-free, keto, etc.)
-- **AI Shopping Optimization**: Smart shopping lists with store navigation and money-saving tips
 - **User Preference Learning**: AI remembers your preferences and improves suggestions over time
 
 ### 📅 Meal Planning & Organization
 - **Interactive Calendar**: Drag & drop meal planning with weekly/monthly views
-- **Smart Shopping Lists**: Auto-generated lists organized by store sections
+- **Smart Shopping Lists**: Auto-generated lists from your meal plans, organized by store section
 - **Nutritional Dashboard**: Track your nutrition with beautiful charts and analytics
 - **Favorites System**: Save your favorite recipes with localStorage persistence
 
@@ -109,11 +108,6 @@ npm run build
 3. Select dietary modifications (vegetarian, gluten-free, keto, etc.)
 4. Get AI-adapted recipes with explanations of changes
 
-#### 🛒 AI Shopping Optimization
-1. Create a shopping list from your meal plans
-2. Click the **AI Sparkles button** in the shopping list
-3. Get optimized shopping routes and money-saving tips
-
 ### Traditional Meal Planning
 1. **Plan Meals**: Use the interactive calendar to drag & drop recipes
 2. **Generate Shopping Lists**: Auto-create organized shopping lists from meal plans
@@ -144,7 +138,7 @@ src/
 │   ├── AIRecommendations.tsx    # AI recipe suggestions
 │   ├── AIMealPlanner.tsx        # AI meal planning
 │   ├── RecipeModal.tsx          # Recipe details with AI modifications
-│   ├── ShoppingListModal.tsx    # Shopping with AI optimization
+│   ├── ShoppingListModal.tsx    # Shopping list generation (no AI optimization)
 │   ├── Header.tsx               # Navigation with favorites
 │   ├── SearchBar.tsx           # Search input with filters
 │   ├── FilterPanel.tsx         # Advanced filtering
@@ -216,6 +210,7 @@ src/
 - [ ] Progressive Web App (PWA) features
 - [ ] Multi-language support
 - [ ] Recipe cost analysis and budgeting
+- [ ] AI-powered shopping list optimization (planned)
 
 ## 📄 License
 
@@ -235,5 +230,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ for food lovers and AI enthusiasts alike!**
 
-> *This project demonstrates real AI integration in a practical application, showcasing modern React development patterns, thoughtful UX design, and the power of free AI models for portfolio projects.* #   a i - r e c i p e - f i n d e r  
- 
+> *This project demonstrates real AI integration in a practical application, showcasing modern React development patterns, thoughtful UX design, and the power of free AI models for portfolio projects.*

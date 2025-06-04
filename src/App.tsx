@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, BarChart3, ShoppingCart, Sparkles } from 'lucide-react';
+import { Calendar, BarChart3, ShoppingCart, Sparkles, Plus } from 'lucide-react';
 import { SearchBar } from '@/components/SearchBar';
 import { FilterPanel } from '@/components/FilterPanel';
 import { RecipeGrid } from '@/components/RecipeGrid';
@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [showShoppingModal, setShowShoppingModal] = useState(false);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [showFabMenu, setShowFabMenu] = useState(false);
 
   const mealPlanHook = useMealPlan();
   const { mealPlans, addRecipeToMealPlan, updateMealPlanById, removeMealPlanById, moveMealPlan, refreshMealPlans } = mealPlanHook;
@@ -141,18 +142,18 @@ const App: React.FC = () => {
       <div className="relative z-10">
         <Header />
         
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
           {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <h1 className="text-5xl font-bold gradient-text mb-4">
+            <h1 className="text-3xl sm:text-5xl font-bold gradient-text mb-2 sm:mb-4">
               AI Recipe Finder & Meal Planner
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto">
               Discover delicious recipes, plan your meals, and track your nutrition all in one place
             </p>
           </motion.div>
@@ -162,12 +163,12 @@ const App: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="max-w-4xl mx-auto mb-8"
+            className="max-w-4xl mx-auto mb-6 sm:mb-8"
           >
-            <div className="flex items-center justify-center gap-2 p-2 bg-white/80 backdrop-blur-md rounded-2xl border border-white/20 shadow-lg flex-wrap">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 p-2 bg-white/80 backdrop-blur-md rounded-2xl border border-white/20 shadow-lg flex-wrap">
               <button
                 onClick={() => setViewMode('search')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
+                className={`w-full sm:w-auto flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                   viewMode === 'search'
                     ? 'bg-primary text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
@@ -177,7 +178,7 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('ai-recommendations')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
+                className={`w-full sm:w-auto flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                   viewMode === 'ai-recommendations'
                     ? 'bg-purple-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
@@ -188,7 +189,7 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('ai-meal-planner')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
+                className={`w-full sm:w-auto flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                   viewMode === 'ai-meal-planner'
                     ? 'bg-green-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
@@ -199,7 +200,7 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('planning')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
+                className={`w-full sm:w-auto flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                   viewMode === 'planning'
                     ? 'bg-primary text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
@@ -300,45 +301,87 @@ const App: React.FC = () => {
           </motion.div>
 
           {/* Quick Action Buttons */}
-          {viewMode === 'search' && searchResults.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="fixed bottom-8 right-8 flex flex-col gap-3"
-            >
-              <button
-                onClick={() => setViewMode('planning')}
-                className="flex items-center gap-2 px-4 py-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                title="Go to Meal Planning"
-              >
-                <Calendar className="w-5 h-5" />
-                <span className="hidden sm:inline">Plan Meals</span>
-              </button>
-              
-              {mealPlans.length > 0 && (
+          <div>
+            {/* Desktop (sm and up) */}
+            <div className="hidden sm:flex fixed bottom-8 right-8 flex-col gap-3 z-40">
+              {viewMode === 'search' && searchResults.length > 0 && (
                 <>
                   <button
-                    onClick={() => handleGenerateShoppingList(mealPlans)}
-                    className="flex items-center gap-2 px-4 py-3 bg-green-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                    title="Generate Shopping List"
+                    onClick={() => setViewMode('planning')}
+                    className="flex items-center gap-2 px-4 py-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    title="Go to Meal Planning"
                   >
-                    <ShoppingCart className="w-5 h-5" />
-                    <span className="hidden sm:inline">Shopping</span>
+                    <Calendar className="w-5 h-5" />
+                    <span className="hidden sm:inline">Plan Meals</span>
                   </button>
-                  
-                  <button
-                    onClick={() => handleViewNutrition(mealPlans)}
-                    className="flex items-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                    title="View Nutrition Dashboard"
-                  >
-                    <BarChart3 className="w-5 h-5" />
-                    <span className="hidden sm:inline">Nutrition</span>
-                  </button>
+                  {mealPlans.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => handleGenerateShoppingList(mealPlans)}
+                        className="flex items-center gap-2 px-4 py-3 bg-green-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        title="Generate Shopping List"
+                      >
+                        <ShoppingCart className="w-5 h-5" />
+                        <span className="hidden sm:inline">Shopping</span>
+                      </button>
+                      <button
+                        onClick={() => handleViewNutrition(mealPlans)}
+                        className="flex items-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        title="View Nutrition Dashboard"
+                      >
+                        <BarChart3 className="w-5 h-5" />
+                        <span className="hidden sm:inline">Nutrition</span>
+                      </button>
+                    </>
+                  )}
                 </>
               )}
-            </motion.div>
-          )}
+            </div>
+            {/* Mobile (below sm): single FAB */}
+            <div className="sm:hidden fixed bottom-6 right-6 z-50">
+              {viewMode === 'search' && searchResults.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setShowFabMenu((v) => !v)}
+                    className="w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center text-3xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    aria-label="Open quick actions"
+                  >
+                    <Plus className={`w-8 h-8 transition-transform ${showFabMenu ? 'rotate-45' : ''}`} />
+                  </button>
+                  {/* Expanded menu */}
+                  {showFabMenu && (
+                    <div className="absolute bottom-16 right-0 flex flex-col items-end gap-3 animate-fade-in z-50">
+                      <button
+                        onClick={() => { setViewMode('planning'); setShowFabMenu(false); }}
+                        className="w-12 h-12 bg-primary text-white rounded-full shadow-lg flex items-center justify-center text-xl"
+                        title="Go to Meal Planning"
+                      >
+                        <Calendar className="w-6 h-6" />
+                      </button>
+                      {mealPlans.length > 0 && (
+                        <>
+                          <button
+                            onClick={() => { handleGenerateShoppingList(mealPlans); setShowFabMenu(false); }}
+                            className="w-12 h-12 bg-green-500 text-white rounded-full shadow-lg flex items-center justify-center text-xl"
+                            title="Generate Shopping List"
+                          >
+                            <ShoppingCart className="w-6 h-6" />
+                          </button>
+                          <button
+                            onClick={() => { handleViewNutrition(mealPlans); setShowFabMenu(false); }}
+                            className="w-12 h-12 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center text-xl"
+                            title="View Nutrition Dashboard"
+                          >
+                            <BarChart3 className="w-6 h-6" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </main>
 
         {/* Modals */}

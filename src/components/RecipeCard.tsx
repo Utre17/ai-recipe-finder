@@ -33,28 +33,29 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onSelect }) => {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -8 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all cursor-pointer card-hover"
+      className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all cursor-pointer card-hover w-full max-w-full"
       onClick={() => onSelect(recipe)}
     >
       <div className="relative">
         <img
           src={recipe.image}
           alt={recipe.title}
-          className="w-full h-48 object-cover"
+          className="w-full h-40 sm:h-48 object-cover"
         />
         <button
           onClick={handleFavoriteToggle}
-          className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md transition-all ${
+          className={`absolute top-3 right-3 sm:top-4 sm:right-4 min-w-[44px] min-h-[44px] p-0 flex items-center justify-center rounded-full backdrop-blur-md transition-all ${
             isLiked 
               ? 'bg-red-500 text-white shadow-lg' 
               : 'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'
           }`}
+          aria-label={isLiked ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
         </button>
         
         {recipe.diets.length > 0 && (
-          <div className="absolute top-4 left-4">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
             <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
               {recipe.diets[0]}
             </span>
@@ -62,8 +63,8 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onSelect }) => {
         )}
       </div>
 
-      <div className="p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">
+      <div className="p-4 sm:p-6">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 line-clamp-2">
           {recipe.title}
         </h3>
         

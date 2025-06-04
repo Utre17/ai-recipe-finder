@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Clock, Users, Edit } from 'lucide-react';
+import { Plus, X, Clock, Edit } from 'lucide-react';
 import { MealPlan, MealType, Recipe } from '@/types/recipe';
 
 interface MealSlotProps {
@@ -82,7 +82,7 @@ export const MealSlot: React.FC<MealSlotProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ delay: index * 0.1 }}
-                className="group relative bg-white border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer"
+                className="group relative bg-white border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer flex flex-col justify-center h-full"
                 onClick={() => onRecipeSelect?.(mealPlan.recipe)}
               >
                 {/* Editable indicator */}
@@ -123,19 +123,32 @@ export const MealSlot: React.FC<MealSlotProps> = ({
                     className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                   />
                   
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <h4 className="font-semibold text-sm text-gray-800 line-clamp-2 leading-tight">
                       {mealPlan.recipe.title}
                     </h4>
-                    
+                    {/* Servings and Edit Row - always inside card, perfectly centered */}
+                    <div className="flex justify-center items-center gap-2 mt-3">
+                      <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 rounded-full font-medium text-gray-700">
+                        <span className="text-base">🍽️</span>
+                        <span className="text-sm font-semibold">{mealPlan.servings}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditServingSize?.(mealPlan);
+                        }}
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 focus:outline-none px-1"
+                        title="Edit servings"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span className="hidden sm:inline text-xs font-medium">Edit</span>
+                      </button>
+                    </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         <span>{mealPlan.recipe.readyInMinutes}m</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-blue-600 font-medium">
-                        <Users className="w-3 h-3" />
-                        <span>{mealPlan.servings} serving{mealPlan.servings !== 1 ? 's' : ''}</span>
                       </div>
                       <div className="opacity-0 group-hover:opacity-100 text-blue-500 text-xs">
                         (click to edit)

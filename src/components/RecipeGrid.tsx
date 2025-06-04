@@ -79,7 +79,7 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
       </div>
 
       <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 gap-y-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -101,7 +101,7 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
 
       {data.results.length < data.totalResults && (
         <div className="flex justify-center pt-8">
-          <button className="px-6 py-3 bg-gradient-to-r from-primary to-purple-600 text-white rounded-2xl hover:shadow-lg transition-all font-medium">
+          <button className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-primary to-purple-600 text-white rounded-2xl hover:shadow-lg transition-all font-medium">
             Load More Recipes
           </button>
         </div>

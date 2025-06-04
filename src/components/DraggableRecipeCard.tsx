@@ -67,8 +67,22 @@ export const DraggableRecipeCard: React.FC<DraggableRecipeCardProps> = ({
           : 'border-transparent hover:border-primary/20 hover:shadow-lg'
       }`}
     >
-      {/* Drag Handle */}
-      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+      {/* Drag Handle for Mobile */}
+      <div
+        className="block md:hidden absolute top-2 left-2 z-20"
+        {...listeners}
+        {...attributes}
+        tabIndex={0}
+        aria-label="Drag to move"
+        title="Drag to move"
+        style={{ touchAction: 'none' }}
+      >
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-1 flex items-center justify-center border border-gray-200 shadow">
+          <GripVertical className="w-5 h-5 text-gray-500" />
+        </div>
+      </div>
+      {/* Drag Handle for Desktop (hidden, whole card is draggable) */}
+      <div className="hidden md:block absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-1">
           <GripVertical className="w-4 h-4 text-gray-500" />
         </div>

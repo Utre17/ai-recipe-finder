@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Clean Code Rule
+
+- Use arrow functions
+- Use TypeScript for all new files
+- Split functions >10 lines into helpers
+- Add comments for any logic that isn't self-evident
+- Prefer single quotes and consistent formatting

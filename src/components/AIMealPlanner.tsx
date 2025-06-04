@@ -51,24 +51,23 @@ export const AIMealPlanner: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-none sm:rounded-3xl max-w-full sm:max-w-4xl w-full shadow-lg border border-gray-100 overflow-hidden p-2 sm:p-0">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <Calendar className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">AI Meal Planner</h2>
+              <h2 className="text-lg sm:text-xl font-bold">AI Meal Planner</h2>
               <p className="text-white/80 text-sm">Smart nutrition planning made easy</p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 w-full sm:w-auto">
             <button
               onClick={() => setShowPreferences(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium shadow transition-colors"
+              className="w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium shadow transition-colors min-w-[44px] min-h-[44px]"
               title="Preferences"
             >
               <SlidersHorizontal className="w-5 h-5" />
@@ -77,17 +76,16 @@ export const AIMealPlanner: React.FC = () => {
             <select
               value={selectedDays}
               onChange={(e) => setSelectedDays(parseInt(e.target.value))}
-              className="px-3 py-2 bg-white/20 text-white rounded-xl border border-white/30 focus:outline-none"
+              className="w-full sm:w-auto px-3 py-2 bg-white/20 text-white rounded-xl border border-white/30 focus:outline-none"
             >
               <option value={3} className="text-gray-800">3 Days</option>
               <option value={7} className="text-gray-800">7 Days</option>
               <option value={14} className="text-gray-800">14 Days</option>
             </select>
-            
             <button
               onClick={handleGenerateMealPlan}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors disabled:opacity-50 min-w-[44px] min-h-[44px]"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -107,26 +105,26 @@ export const AIMealPlanner: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
             onClick={() => setShowPreferences(false)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl max-w-md w-full max-h-[80vh] overflow-hidden"
+              className="bg-white rounded-none sm:rounded-3xl max-w-full sm:max-w-md w-full max-h-[80vh] overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-xl font-bold gradient-text">Meal Plan Preferences</h2>
+              <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-bold gradient-text">Meal Plan Preferences</h2>
                 <button
                   onClick={() => setShowPreferences(false)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors min-w-[44px] min-h-[44px]"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
+              <div className="p-4 sm:p-6 overflow-y-auto max-h-[60vh] space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Diet Type</label>
                   <select

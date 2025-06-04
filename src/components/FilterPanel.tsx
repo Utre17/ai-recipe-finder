@@ -25,10 +25,10 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, filters, onFil
           exit={{ opacity: 0, height: 0 }}
           className="mt-4 overflow-hidden"
         >
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/20 p-6 shadow-lg">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/20 p-4 sm:p-6 shadow-lg">
             <h3 className="text-lg font-semibold mb-4 gradient-text">Advanced Filters</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Diet
@@ -101,7 +101,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, filters, onFil
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Intolerances
@@ -143,10 +143,10 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, filters, onFil
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex flex-col sm:flex-row justify-end gap-2">
               <button
                 onClick={() => onFiltersChange({ query: filters.query })}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="w-full sm:w-auto px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
                 Clear Filters
               </button>

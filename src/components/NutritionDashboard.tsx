@@ -172,22 +172,22 @@ export const NutritionDashboard: React.FC<NutritionDashboardProps> = ({
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-none sm:rounded-3xl max-w-full sm:max-w-6xl w-full max-h-[90vh] overflow-hidden p-2 sm:p-0"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
-            <div className="flex items-center justify-between">
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-8 h-8" />
                 <div>
-                  <h2 className="text-2xl font-bold">Nutrition Dashboard</h2>
-                  <p className="text-white/80">Track your nutritional goals and progress</p>
+                  <h2 className="text-xl sm:text-2xl font-bold">Nutrition Dashboard</h2>
+                  <p className="text-white/80 text-sm">Track your nutritional goals and progress</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors min-w-[44px] min-h-[44px]"
               >
                 <X className="w-6 h-6" />
               </button>
