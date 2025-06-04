@@ -135,6 +135,8 @@ const App: React.FC = () => {
     setSelectedRecipe(mockRecipe);
   };
 
+  console.log('[App] mealPlans passed to modals:', mealPlans);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
       <BackgroundBlobs />
@@ -284,6 +286,7 @@ const App: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
+                className="max-w-4xl mx-auto mb-8"
               >
                 <AIRecommendations onRecipeSelect={handleAIRecipeSelect} />
               </motion.div>
@@ -294,6 +297,7 @@ const App: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
+                className="max-w-4xl mx-auto mb-8"
               >
                 <AIMealPlanner />
               </motion.div>
@@ -392,7 +396,6 @@ const App: React.FC = () => {
           />
         )}
 
-        {console.log('[App] mealPlans passed to modals:', mealPlans)}
         <ShoppingListModal
           isOpen={showShoppingModal}
           onClose={() => setShowShoppingModal(false)}
